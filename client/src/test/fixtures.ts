@@ -1,4 +1,4 @@
-import type { Project, ProjectListResponse } from '@lc-projecthub/shared'
+import type { Project, ProjectListResponse, Task, TaskListResponse, Technician } from '@lc-projecthub/shared'
 
 /** Fictional projects for UI tests. */
 export const projectA: Project = {
@@ -50,5 +50,45 @@ export function listResponse(
   return {
     data: projects,
     meta: { page: 1, pageSize: 10, total: projects.length, totalPages: projects.length ? 1 : 0, ...meta },
+  }
+}
+
+/* ---- Tasks and technicians (fictional) ---- */
+
+export const technicians: Technician[] = [
+  { id: 'TECH-001', name: 'Test Technician One', team: 'Test Team A' },
+  { id: 'TECH-002', name: 'Test Technician Two', team: 'Test Team B' },
+]
+
+export const taskA: Task = {
+  id: 'TASK-001',
+  projectId: 'PRJ-001',
+  title: 'Survey the site',
+  description: 'Walk every room and note the cable routes.',
+  status: 'In progress',
+  priority: 'High',
+  assigneeId: 'TECH-001',
+  assigneeName: 'Test Technician One',
+  startDate: '2000-01-05',
+  dueDate: '2099-01-12',
+}
+
+export const taskB: Task = {
+  id: 'TASK-002',
+  projectId: 'PRJ-001',
+  title: 'Order switches',
+  description: '',
+  status: 'To do',
+  priority: 'Low',
+  assigneeId: null,
+  assigneeName: null,
+  startDate: '2000-01-10',
+  dueDate: '2000-02-01',
+}
+
+export function taskListResponse(tasks: Task[], meta: Partial<TaskListResponse['meta']> = {}): TaskListResponse {
+  return {
+    data: tasks,
+    meta: { page: 1, pageSize: 10, total: tasks.length, totalPages: tasks.length ? 1 : 0, ...meta },
   }
 }

@@ -7,6 +7,8 @@ import { ProjectCreatePage } from './pages/ProjectCreatePage'
 import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { ProjectEditPage } from './pages/ProjectEditPage'
 import { ProjectsPage } from './pages/ProjectsPage'
+import { TaskCreatePage } from './pages/TaskCreatePage'
+import { TaskEditPage } from './pages/TaskEditPage'
 
 /** Sections that have their own pages; everything else in the navigation shows "Coming soon". */
 const BUILT_PATHS = ['/', '/projects']
@@ -21,6 +23,8 @@ export const routes: RouteObject[] = [
       { path: 'projects/new', element: <ProjectCreatePage /> },
       { path: 'projects/:id', element: <ProjectDetailPage /> },
       { path: 'projects/:id/edit', element: <ProjectEditPage /> },
+      { path: 'projects/:id/tasks/new', element: <TaskCreatePage /> },
+      { path: 'projects/:id/tasks/:taskId/edit', element: <TaskEditPage /> },
       ...navItems
         .filter((item) => !BUILT_PATHS.includes(item.path))
         .map((item) => ({ path: item.path.slice(1), element: <PlaceholderPage /> })),

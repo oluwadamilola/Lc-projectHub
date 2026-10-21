@@ -78,3 +78,68 @@ export interface ApiErrorResponse {
     details?: ApiErrorDetail[]
   }
 }
+
+/* ---- Tasks and technicians ---- */
+
+export const TASK_STATUSES = ['To do', 'In progress', 'Blocked', 'Done'] as const
+export type TaskStatus = (typeof TASK_STATUSES)[number]
+
+/** Tasks use the same priority scale as projects. */
+export const TASK_PRIORITIES = PROJECT_PRIORITIES
+export type TaskPriority = ProjectPriority
+
+/** A member of the IT team who can be assigned tasks. Fictional records only. */
+export interface Technician {
+  /** Reference such as "TECH-001". */
+  id: string
+  name: string
+  team: string
+}
+
+export interface Task {
+  /** Reference such as "TASK-014", unique across all projects. */
+  id: string
+  /** The project this task belongs to. Fixed when the task is created. */
+  projectId: string
+  title: string
+  /** Optional; may be an empty string. */
+  description: string
+  status: TaskStatus
+  priority: TaskPriority
+  /** The assigned technician, or null while unassigned. */
+  assigneeId: string | null
+  /** Read-only: the assigned technician's name, filled in by the server. */
+  assigneeName: string | null
+  /** ISO calendar dates (YYYY-MM-DD). */
+  startDate: string
+  dueDate: string
+}
+
+/** What a caller may send to create or replace a task. The reference and project come from the address, never the body. */
+export type TaskInput = Omit<Task, 'id' | 'projectId' | 'assigneeName'>
+export type TaskInputField = keyof TaskInput
+
+/** `assignee` is a technician reference, or this value to find tasks nobody has picked up yet. */
+export const UNASSIGNED_FILTER = 'unassigned'
+
+/** Query parameters accepted by GET /api/projects/:id/tasks (all optional on the wire). */
+export interface TaskListParams {
+  q?: string
+  status?: TaskStatus
+  assignee?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface TaskListResponse {
+  data: Task[]
+  meta: PageMeta
+}
+
+export interface TaskResponse {
+  data: Task
+}
+
+export interface TechnicianListResponse {
+  data: Technician[]
+}

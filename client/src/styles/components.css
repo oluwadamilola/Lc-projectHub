@@ -19,37 +19,6 @@
   background: var(--surface-raised);
 }
 
-/* Theme switcher: three-way radio group */
-.theme-toggle {
-  display: inline-flex;
-  padding: 2px;
-  gap: 2px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-}
-
-.theme-toggle__option {
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 0;
-  border-radius: calc(var(--radius-md) - 2px);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.theme-toggle__option:hover {
-  color: var(--text);
-}
-
-.theme-toggle__option[aria-checked='true'] {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-}
-
 .user-chip {
   display: flex;
   align-items: center;
@@ -189,6 +158,9 @@
 /* Tables */
 .table-scroll {
   overflow-x: auto;
+  /* Contains absolutely positioned content (such as visually hidden labels) inside the scroller;
+     otherwise it sits at the far right of a wide table and widens the whole page. */
+  position: relative;
 }
 
 .data-table {
@@ -730,4 +702,34 @@
   border-color: var(--success-text);
   background: var(--success-bg);
   color: var(--success-text);
+}
+
+/* Tasks */
+.detail-tasks {
+  margin-top: var(--space-4);
+}
+
+.count {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.badge--inline {
+  margin-left: var(--space-2);
+}
+
+/* A task title may be long: let it wrap instead of stretching the table. */
+.data-table .data-table__wrap {
+  white-space: normal;
+  min-width: 12rem;
+}
+
+@media (min-width: 40rem) {
+  .toolbar--tasks {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
 }
