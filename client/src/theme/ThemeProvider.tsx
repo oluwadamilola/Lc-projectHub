@@ -1,44 +1,32 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import {
-  THEME_STORAGE_KEY,
-  ThemeContext,
-  type ResolvedTheme,
-  type ThemePreference,
-} from './useTheme'
+import { THEME_STORAGE_KEY, ThemeContext, type Theme } from './useTheme'
 
 const DARK_QUERY = '(prefers-color-scheme: dark)'
 
-function readStoredPreference(): ThemePreference {
+/**
+ * The saved choice wins. On a first visit (nothing saved) the operating-system preference picks
+ * the starting theme, once; after that only the user's own choice changes it. An old saved value
+ * such as "system" from an earlier version is ignored.
+ */
+function initialTheme(): Theme {
   try {
     const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+    if (stored === 'light' || stored === 'dark') return stored
   } catch {
-    // Storage can be blocked (private mode, policy); fall back to the system theme.
+    // Storage can be blocked (private mode, policy); fall through to the system preference.
   }
-  return 'system'
+  return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light'
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(readStoredPreference)
-  const [systemDark, setSystemDark] = useState(() => window.matchMedia(DARK_QUERY).matches)
-
-  // Track changes to the operating-system setting while the app is open.
-  useEffect(() => {
-    const query = window.matchMedia(DARK_QUERY)
-    const onChange = (event: MediaQueryListEvent) => setSystemDark(event.matches)
-    query.addEventListener('change', onChange)
-    return () => query.removeEventListener('change', onChange)
-  }, [])
-
-  const resolved: ResolvedTheme =
-    preference === 'system' ? (systemDark ? 'dark' : 'light') : preference
+  const [theme, setThemeState] = useState<Theme>(initialTheme)
 
   useEffect(() => {
-    document.documentElement.dataset.theme = resolved
-  }, [resolved])
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
-  const setPreference = useCallback((next: ThemePreference) => {
-    setPreferenceState(next)
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next)
     try {
       localStorage.setItem(THEME_STORAGE_KEY, next)
     } catch {
@@ -46,10 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const value = useMemo(
-    () => ({ preference, resolved, setPreference }),
-    [preference, resolved, setPreference],
-  )
+  const value = useMemo(() => ({ theme, setTheme }), [theme, setTheme])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

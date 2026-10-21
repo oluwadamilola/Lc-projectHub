@@ -1,16 +1,15 @@
 import { useRef, type KeyboardEvent } from 'react'
 import { Icon, type IconName } from './Icon'
-import { useTheme, type ThemePreference } from '../theme/useTheme'
+import { useTheme, type Theme } from '../theme/useTheme'
 
-const options: { value: ThemePreference; label: string; icon: IconName }[] = [
-  { value: 'system', label: 'System theme', icon: 'system' },
+const options: { value: Theme; label: string; icon: IconName }[] = [
   { value: 'light', label: 'Light theme', icon: 'sun' },
   { value: 'dark', label: 'Dark theme', icon: 'moon' },
 ]
 
 /** A radio group: arrow keys move between options, Tab leaves the group. */
 export function ThemeToggle() {
-  const { preference, setPreference } = useTheme()
+  const { theme, setTheme } = useTheme()
   const refs = useRef<(HTMLButtonElement | null)[]>([])
 
   function onKeyDown(event: KeyboardEvent, index: number) {
@@ -20,7 +19,7 @@ export function ThemeToggle() {
     if (!step) return
     event.preventDefault()
     const next = (index + step + options.length) % options.length
-    setPreference(options[next].value)
+    setTheme(options[next].value)
     refs.current[next]?.focus()
   }
 
@@ -35,11 +34,11 @@ export function ThemeToggle() {
           type="button"
           role="radio"
           className="theme-toggle__option"
-          aria-checked={preference === option.value}
+          aria-checked={theme === option.value}
           aria-label={option.label}
           title={option.label}
-          tabIndex={preference === option.value ? 0 : -1}
-          onClick={() => setPreference(option.value)}
+          tabIndex={theme === option.value ? 0 : -1}
+          onClick={() => setTheme(option.value)}
           onKeyDown={(event) => onKeyDown(event, index)}
         >
           <Icon name={option.icon} />

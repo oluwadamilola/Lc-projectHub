@@ -57,14 +57,16 @@
   --btn-text: #ffffff;
   --focus-ring: var(--brand-pink-deep);
 
-  --sidebar-bg: var(--brand-charcoal);
-  --sidebar-text: #e7e5e4;
-  --sidebar-muted: #a8a29e;
-  --sidebar-hover: rgb(255 255 255 / 0.08);
-  --sidebar-active-bg: rgb(235 51 148 / 0.2);
-  --sidebar-active-text: var(--brand-pink-light);
-  --sidebar-border: transparent;
-  --sidebar-focus-ring: var(--brand-pink-light);
+  /* Sidebar: white like the top bar, separated from the page by a border. */
+  --sidebar-bg: var(--surface);
+  --sidebar-border: var(--border);
+  --sidebar-brand-text: var(--text);
+  --sidebar-text: var(--text);
+  --sidebar-muted: var(--text-muted);
+  --sidebar-hover: rgb(28 25 23 / 0.06);
+  --sidebar-active-bg: var(--accent-soft);
+  --sidebar-active-text: var(--brand-pink-deep);
+  --sidebar-focus-ring: var(--focus-ring);
 
   --shadow: 0 1px 2px rgb(28 25 23 / 0.06), 0 4px 12px rgb(28 25 23 / 0.06);
   --overlay: rgb(28 25 23 / 0.55);
@@ -108,8 +110,16 @@
   --btn-text: var(--brand-charcoal);
   --focus-ring: var(--brand-pink-light);
 
+  /* Sidebar: darker than the page so it reads as a separate panel. */
   --sidebar-bg: #151211;
   --sidebar-border: #44403c;
+  --sidebar-brand-text: #ffffff;
+  --sidebar-text: #e7e5e4;
+  --sidebar-muted: #a8a29e;
+  --sidebar-hover: rgb(255 255 255 / 0.08);
+  --sidebar-active-bg: rgb(235 51 148 / 0.2);
+  --sidebar-active-text: var(--brand-pink-light);
+  --sidebar-focus-ring: var(--brand-pink-light);
 
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
   --overlay: rgb(0 0 0 / 0.65);

@@ -1,29 +1,9 @@
-import type { AddressInfo } from 'node:net'
-import type { Server } from 'node:http'
 import type { ProjectListResponse } from '@lc-projecthub/shared'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp } from './app.js'
 import type { ProjectRepository } from './domain/projectRepository.js'
 import { InMemoryProjectRepository } from './repositories/inMemoryProjectRepository.js'
-import { ProjectService } from './services/projectService.js'
 import { fixtureProjects } from './testing/fixtures.js'
-
-interface RunningApp {
-  baseUrl: string
-  close: () => Promise<void>
-}
-
-async function start(repository: ProjectRepository): Promise<RunningApp> {
-  const app = createApp({ projectService: new ProjectService(repository), clientOrigin: 'http://localhost:5173' })
-  const server: Server = await new Promise((resolve) => {
-    const listening = app.listen(0, '127.0.0.1', () => resolve(listening))
-  })
-  const { port } = server.address() as AddressInfo
-  return {
-    baseUrl: `http://127.0.0.1:${port}`,
-    close: () => new Promise((resolve) => server.close(() => resolve())),
-  }
-}
+import { startTestServer as start, type RunningApp } from './testing/startTestServer.js'
 
 describe('API', () => {
   let running: RunningApp
@@ -127,6 +107,8 @@ describe('API when the repository fails unexpectedly', () => {
   const failing: ProjectRepository = {
     list: () => Promise.reject(new Error('connection string leaked: secret-value')),
     findById: () => Promise.reject(new Error('boom')),
+    create: () => Promise.reject(new Error('boom')),
+    update: () => Promise.reject(new Error('boom')),
   }
   let running: RunningApp
 

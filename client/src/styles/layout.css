@@ -36,11 +36,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  height: var(--topbar-height);
+  height: 100%;
   padding: 0 var(--space-4);
   font-weight: 700;
   font-size: var(--text-lg);
-  color: #fff;
+  color: var(--sidebar-brand-text);
   text-decoration: none;
 }
 
@@ -48,7 +48,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* Same height as the top bar so the two bottom borders line up. */
+  height: var(--topbar-height);
   padding-right: var(--space-3);
+  border-bottom: 1px solid var(--sidebar-border);
 }
 
 .sidebar__close {
