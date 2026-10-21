@@ -2,14 +2,18 @@
   "name": "lc-projecthub",
   "private": true,
   "version": "0.1.0",
-  "workspaces": ["shared", "client", "server"],
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ],
   "scripts": {
     "build:shared": "npm run build -w shared",
     "dev:client": "npm run build:shared && npm run dev -w client",
     "dev:server": "npm run build:shared && npm run dev -w server",
     "build": "npm run build:shared && npm run build -w client && npm run build -w server",
-    "typecheck": "npm run build:shared && npm run typecheck -w server && npm run typecheck -w client",
-    "lint": "npm run lint -w client && npm run lint -w server",
-    "test": "npm run build:shared && npm test -w server && npm test -w client"
+    "typecheck": "npm run build:shared && npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w client",
+    "lint": "npm run lint -w shared && npm run lint -w client && npm run lint -w server",
+    "test": "npm run build:shared && npm test -w shared && npm test -w server && npm test -w client"
   }
 }

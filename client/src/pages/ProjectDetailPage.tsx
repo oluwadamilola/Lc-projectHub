@@ -1,8 +1,10 @@
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getProject } from '../api/projects'
 import { PriorityBadge, StatusBadge } from '../components/StatusBadge'
 import { ProgressBar } from '../components/ProgressBar'
-import { EmptyState, ErrorState, LoadingState } from '../components/StateMessage'
+import { LoadingState } from '../components/StateMessage'
+import { ProjectLoadFailure } from '../components/ProjectLoadFailure'
 import { useApiResource } from '../hooks/useApiResource'
 import { describeDeadline, formatDate } from '../lib/format'
 
@@ -16,6 +18,22 @@ function BackLink() {
 
 export function ProjectDetailPage() {
   const { id = '' } = useParams()
+  const location = useLocation()
+  const navigate = useNavigate()
+  // A confirmation passed along by the page that just saved (for example "Project PRJ-113 was created.").
+  // It belongs to this project only, so it is remembered together with the reference it was shown for.
+  const [notice] = useState(() => {
+    const text = (location.state as { notice?: string } | null)?.notice
+    return text ? { id, text } : undefined
+  })
+  const clearedRef = useRef(false)
+  useEffect(() => {
+    // Clear it from the history entry so a refresh or Back does not show it again.
+    if (notice && !clearedRef.current) {
+      clearedRef.current = true
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [notice, navigate, location.pathname])
   const result = useApiResource((signal) => getProject(id, signal), [id])
 
   if (result.status === 'loading' && !result.data) {
@@ -28,25 +46,10 @@ export function ProjectDetailPage() {
   }
 
   if (result.status === 'error') {
-    // 404 (no such project) and 400 (malformed reference) both mean "there is no such project".
-    const notFound = result.error.status === 404 || result.error.status === 400
     return (
       <>
         <BackLink />
-        {notFound ? (
-          <section className="card">
-            <EmptyState title="Project not found">
-              <p>There is no project with the reference “{id}”. It may have been removed or the link may be wrong.</p>
-              <Link className="btn btn--primary" to="/projects">
-                View all projects
-              </Link>
-            </EmptyState>
-          </section>
-        ) : (
-          <section className="card">
-            <ErrorState title="Project could not be loaded" message={result.error.message} onRetry={result.reload} />
-          </section>
-        )}
+        <ProjectLoadFailure id={id} error={result.error} onRetry={result.reload} />
       </>
     )
   }
@@ -66,8 +69,19 @@ export function ProjectDetailPage() {
             <PriorityBadge priority={project.priority} />
           </div>
         </div>
-        <span className="demo-note">Demonstration data</span>
+        <div className="page-header__actions">
+          <span className="demo-note">Demonstration data</span>
+          <Link className="btn btn--primary" to={`/projects/${encodeURIComponent(project.id)}/edit`}>
+            Edit project
+          </Link>
+        </div>
       </div>
+
+      {notice?.id === project.id && (
+        <p className="notice notice--success" role="status">
+          {notice.text}
+        </p>
+      )}
 
       <div className="detail-grid">
         <section className="card" aria-labelledby="overview-heading">

@@ -78,7 +78,12 @@ export function ProjectsPage() {
           <h1>Projects</h1>
           <p>Browse and search IT projects across the college.</p>
         </div>
-        <span className="demo-note">Demonstration data</span>
+        <div className="page-header__actions">
+          <span className="demo-note">Demonstration data</span>
+          <Link className="btn btn--primary" to="/projects/new">
+            New project
+          </Link>
+        </div>
       </div>
 
       <section className="card" aria-label="Project list">

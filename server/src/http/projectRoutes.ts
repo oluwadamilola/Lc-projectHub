@@ -3,7 +3,7 @@ import type { ProjectResponse } from '@lc-projecthub/shared'
 import type { ProjectService } from '../services/projectService.js'
 import { parseProjectId, parseProjectQuery } from './parseProjectQuery.js'
 
-/** Thin HTTP layer: parse and validate input, call the service, shape the response. */
+/** Thin HTTP layer: parse input, call the service, shape the response. */
 export function createProjectRouter(service: ProjectService): Router {
   const router = Router()
 
@@ -12,8 +12,20 @@ export function createProjectRouter(service: ProjectService): Router {
     res.json(await service.list(criteria))
   })
 
+  router.post('/', async (req, res) => {
+    const project = await service.create(req.body)
+    const body: ProjectResponse = { data: project }
+    res.status(201).location(`/api/projects/${project.id}`).json(body)
+  })
+
   router.get('/:id', async (req, res) => {
     const project = await service.getById(parseProjectId(req.params.id))
+    const body: ProjectResponse = { data: project }
+    res.json(body)
+  })
+
+  router.put('/:id', async (req, res) => {
+    const project = await service.update(parseProjectId(req.params.id), req.body)
     const body: ProjectResponse = { data: project }
     res.json(body)
   })
