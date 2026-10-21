@@ -1,0 +1,182 @@
+import type { Project } from '@lc-projecthub/shared'
+
+/*
+  FICTIONAL DEMONSTRATION DATA ONLY.
+  Names, places, departments and figures are invented. No college systems or real records are used.
+  Dates are generated relative to today so the demo always looks current.
+*/
+
+type SeedProject = Omit<Project, 'startDate' | 'dueDate'> & { startOffsetDays: number; dueOffsetDays: number }
+
+const seed: SeedProject[] = [
+  {
+    id: 'PRJ-101',
+    name: 'Library Wi-Fi Upgrade',
+    description: 'Replace ageing access points with a managed Wi-Fi 6 network across all library floors.',
+    location: 'Demo Library',
+    department: 'Infrastructure',
+    lead: 'Alex Morgan',
+    priority: 'High',
+    status: 'On track',
+    progress: 72,
+    startOffsetDays: -60,
+    dueOffsetDays: 21,
+  },
+  {
+    id: 'PRJ-102',
+    name: 'Lecture Theatre AV Refresh',
+    description: 'Install new projectors, microphones and lecture-capture equipment in three theatres.',
+    location: 'Demo Block A',
+    department: 'Digital Learning',
+    lead: 'Priya Shah',
+    priority: 'High',
+    status: 'At risk',
+    progress: 45,
+    startOffsetDays: -45,
+    dueOffsetDays: 14,
+  },
+  {
+    id: 'PRJ-103',
+    name: 'Student Laptop Loan Scheme',
+    description: 'Prepare and image a pool of loan laptops and set up a self-service booking process.',
+    location: 'Demo Learning Hub',
+    department: 'Service Desk',
+    lead: 'Sam Okafor',
+    priority: 'Medium',
+    status: 'On track',
+    progress: 88,
+    startOffsetDays: -80,
+    dueOffsetDays: 9,
+  },
+  {
+    id: 'PRJ-104',
+    name: 'Workshop Network Cabling',
+    description: 'Run structured cabling and new network points through the engineering workshop.',
+    location: 'Demo Engineering Workshop',
+    department: 'Infrastructure',
+    lead: 'Jordan Ellis',
+    priority: 'Critical',
+    status: 'Delayed',
+    progress: 31,
+    startOffsetDays: -90,
+    dueOffsetDays: -6,
+  },
+  {
+    id: 'PRJ-105',
+    name: 'Digital Signage Rollout',
+    description: 'Introduce digital notice screens for timetable changes and campus announcements.',
+    location: 'Demo Main Entrance',
+    department: 'Digital Learning',
+    lead: 'Taylor Brooks',
+    priority: 'Low',
+    status: 'Planning',
+    progress: 8,
+    startOffsetDays: 7,
+    dueOffsetDays: 75,
+  },
+  {
+    id: 'PRJ-106',
+    name: 'Print Service Consolidation',
+    description: 'Move departmental printers onto a single managed print service.',
+    location: 'Demo Block B',
+    department: 'Service Desk',
+    lead: 'Alex Morgan',
+    priority: 'Medium',
+    status: 'Complete',
+    progress: 100,
+    startOffsetDays: -120,
+    dueOffsetDays: -20,
+  },
+  {
+    id: 'PRJ-107',
+    name: 'Multi-Factor Authentication Rollout',
+    description: 'Enable multi-factor sign-in for staff accounts in phased groups.',
+    location: 'Demo Admin Office',
+    department: 'Information Security',
+    lead: 'Morgan Reid',
+    priority: 'Critical',
+    status: 'On track',
+    progress: 56,
+    startOffsetDays: -40,
+    dueOffsetDays: 35,
+  },
+  {
+    id: 'PRJ-108',
+    name: 'Server Room Cooling Replacement',
+    description: 'Replace end-of-life cooling units and add temperature monitoring.',
+    location: 'Demo Data Room',
+    department: 'Infrastructure',
+    lead: 'Jordan Ellis',
+    priority: 'High',
+    status: 'At risk',
+    progress: 38,
+    startOffsetDays: -50,
+    dueOffsetDays: 28,
+  },
+  {
+    id: 'PRJ-109',
+    name: 'Classroom Display Standardisation',
+    description: 'Standardise interactive displays and casting tools across general teaching rooms.',
+    location: 'Demo Block C',
+    department: 'Digital Learning',
+    lead: 'Priya Shah',
+    priority: 'Medium',
+    status: 'Planning',
+    progress: 12,
+    startOffsetDays: 14,
+    dueOffsetDays: 110,
+  },
+  {
+    id: 'PRJ-110',
+    name: 'Service Desk Portal Upgrade',
+    description: 'Upgrade the IT service desk portal and simplify request forms for staff and students.',
+    location: 'Demo Admin Office',
+    department: 'Service Desk',
+    lead: 'Sam Okafor',
+    priority: 'Medium',
+    status: 'On track',
+    progress: 64,
+    startOffsetDays: -70,
+    dueOffsetDays: 40,
+  },
+  {
+    id: 'PRJ-111',
+    name: 'Sports Hall Camera Install',
+    description: 'Install network cameras and storage for the sports hall security system.',
+    location: 'Demo Sports Hall',
+    department: 'Estates Technology',
+    lead: 'Taylor Brooks',
+    priority: 'Low',
+    status: 'Delayed',
+    progress: 22,
+    startOffsetDays: -75,
+    dueOffsetDays: -3,
+  },
+  {
+    id: 'PRJ-112',
+    name: 'Legacy Laptop Retirement',
+    description: 'Securely wipe and recycle laptops that have reached end of life.',
+    location: 'Demo Learning Hub',
+    department: 'Service Desk',
+    lead: 'Morgan Reid',
+    priority: 'Low',
+    status: 'Complete',
+    progress: 100,
+    startOffsetDays: -150,
+    dueOffsetDays: -45,
+  },
+]
+
+function isoDateFromToday(today: Date, offsetDays: number): string {
+  const date = new Date(today)
+  date.setDate(date.getDate() + offsetDays)
+  return date.toISOString().slice(0, 10)
+}
+
+export function buildSeedProjects(today: Date = new Date()): Project[] {
+  return seed.map(({ startOffsetDays, dueOffsetDays, ...project }) => ({
+    ...project,
+    startDate: isoDateFromToday(today, startOffsetDays),
+    dueDate: isoDateFromToday(today, dueOffsetDays),
+  }))
+}

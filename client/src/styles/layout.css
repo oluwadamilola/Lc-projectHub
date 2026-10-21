@@ -14,15 +14,18 @@
   color: var(--sidebar-text);
   border-right: 1px solid var(--sidebar-border);
   transform: translateX(-100%);
+  /* Hide from keyboard and screen readers only after the slide-out finishes... */
   transition:
     transform 0.2s ease,
-    visibility 0.2s;
+    visibility 0s linear 0.2s;
   visibility: hidden;
 }
 
+/* ...but become visible (and focusable) immediately when opening. */
 .sidebar[data-open='true'] {
   transform: none;
   visibility: visible;
+  transition-delay: 0s;
 }
 
 .sidebar :focus-visible {
