@@ -1,6 +1,6 @@
-import type { ProjectStatus } from '../data/demoData'
+import type { ProjectPriority, ProjectStatus } from '@lc-projecthub/shared'
 
-const tone: Record<ProjectStatus, string> = {
+const statusTone: Record<ProjectStatus, string> = {
   'On track': 'success',
   'At risk': 'warning',
   Delayed: 'danger',
@@ -8,7 +8,18 @@ const tone: Record<ProjectStatus, string> = {
   Complete: 'neutral',
 }
 
-/** Status is always shown as text, never by colour alone. */
+const priorityTone: Record<ProjectPriority, string> = {
+  Critical: 'danger',
+  High: 'warning',
+  Medium: 'info',
+  Low: 'neutral',
+}
+
+/** Status and priority are always shown as text, never by colour alone. */
 export function StatusBadge({ status }: { status: ProjectStatus }) {
-  return <span className={`badge badge--${tone[status]}`}>{status}</span>
+  return <span className={`badge badge--${statusTone[status]}`}>{status}</span>
+}
+
+export function PriorityBadge({ priority }: { priority: ProjectPriority }) {
+  return <span className={`badge badge--${priorityTone[priority]}`}>{priority}</span>
 }

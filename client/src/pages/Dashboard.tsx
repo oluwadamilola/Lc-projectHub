@@ -1,15 +1,14 @@
+import { Link } from 'react-router-dom'
+import { PROJECT_STATUSES, type Project, type ProjectStatus } from '@lc-projecthub/shared'
+import { getProjects } from '../api/projects'
+import { ProgressBar } from '../components/ProgressBar'
+import { ErrorState, LoadingState } from '../components/StateMessage'
+import { SampleBadge } from '../components/SampleBadge'
 import { StatCard } from '../components/StatCard'
 import { StatusBadge } from '../components/StatusBadge'
-import {
-  demoActivity,
-  demoMilestones,
-  demoProjects,
-  demoStats,
-  type ProjectStatus,
-} from '../data/demoData'
-
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00`))
+import { demoActivity, demoMilestones, demoStats } from '../data/demoData'
+import { useApiResource } from '../hooks/useApiResource'
+import { formatDate } from '../lib/format'
 
 const statusFills: Record<ProjectStatus, string> = {
   'On track': 'var(--chart-1)',
@@ -18,15 +17,14 @@ const statusFills: Record<ProjectStatus, string> = {
   Planning: 'var(--chart-2)',
   Complete: 'var(--chart-4)',
 }
-const statusOrder: ProjectStatus[] = ['On track', 'At risk', 'Delayed', 'Planning', 'Complete']
+
+const GLANCE_COUNT = 6
+// The dashboard summarises every project, so ask for the largest page the API allows.
+const DASHBOARD_PAGE_SIZE = 100
 
 export function Dashboard() {
-  const active = demoProjects.filter((project) => project.status !== 'Complete')
-  const attention = demoProjects.filter((project) => project.status === 'At risk' || project.status === 'Delayed')
-  const counts = statusOrder.map((status) => ({
-    status,
-    count: demoProjects.filter((project) => project.status === status).length,
-  }))
+  const result = useApiResource((signal) => getProjects({ pageSize: DASHBOARD_PAGE_SIZE }, signal), [])
+  const data = result.data
 
   return (
     <>
@@ -38,14 +36,46 @@ export function Dashboard() {
         <span className="demo-note">Demonstration data</span>
       </div>
 
+      {!data && result.status === 'loading' && <LoadingState label="Loading dashboard…" />}
+      {!data && result.status === 'error' && (
+        <section className="card">
+          <ErrorState title="The dashboard could not be loaded" message={result.error.message} onRetry={result.reload} />
+        </section>
+      )}
+
+      {data && <DashboardContent projects={data.data} total={data.meta.total} />}
+    </>
+  )
+}
+
+function DashboardContent({ projects, total }: { projects: Project[]; total: number }) {
+  // The API returns at most one page, so for very large datasets the figures below cover only part of the data.
+  const partial = total > projects.length
+  const active = projects.filter((project) => project.status !== 'Complete')
+  const attention = projects.filter((project) => project.status === 'At risk' || project.status === 'Delayed')
+  const counts = PROJECT_STATUSES.map((status) => ({
+    status,
+    count: projects.filter((project) => project.status === status).length,
+  }))
+  // Unfinished projects, soonest deadline first.
+  const upcoming = [...active].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, GLANCE_COUNT)
+
+  return (
+    <>
+      {partial && (
+        <p className="notice" role="note">
+          Project figures on this page are based on the first {projects.length} of {total} projects.
+        </p>
+      )}
       <section className="stat-grid" aria-label="Key figures">
-        <StatCard label="Active projects" value={active.length} hint={`${demoProjects.length} projects in total`} />
+        <StatCard label="Active projects" value={active.length} hint={`${total} projects in total`} />
         <StatCard label="Need attention" value={attention.length} hint="At risk or delayed" />
-        <StatCard label="Tasks due this week" value={demoStats.tasksDueThisWeek} hint="Across all projects" />
+        <StatCard label="Tasks due this week" value={demoStats.tasksDueThisWeek} hint="Across all projects" sample />
         <StatCard
           label="Equipment deployed"
           value={`${demoStats.equipmentDeployed} / ${demoStats.equipmentTotal}`}
           hint="Items assigned to projects"
+          sample
         />
       </section>
 
@@ -53,6 +83,7 @@ export function Dashboard() {
         <section className="card" aria-labelledby="projects-heading">
           <div className="card__header">
             <h2 id="projects-heading">Projects at a glance</h2>
+            <p className="section-note">Unfinished projects, nearest deadline first.</p>
           </div>
           <div className="card__body card__body--flush">
             <div className="table-scroll" tabIndex={0} role="region" aria-labelledby="projects-heading">
@@ -68,10 +99,12 @@ export function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {demoProjects.map((project) => (
+                  {upcoming.map((project) => (
                     <tr key={project.id}>
                       <th scope="row" className="data-table__primary">
-                        {project.name}
+                        <Link className="table-link" to={`/projects/${project.id}`}>
+                          {project.name}
+                        </Link>
                       </th>
                       <td>{project.location}</td>
                       <td>{project.lead}</td>
@@ -79,12 +112,7 @@ export function Dashboard() {
                         <StatusBadge status={project.status} />
                       </td>
                       <td className="nowrap">
-                        <div className="progress">
-                          <div className="progress__track" aria-hidden="true">
-                            <div className="progress__fill" style={{ width: `${project.progress}%` }} />
-                          </div>
-                          <span className="progress__label">{project.progress}%</span>
-                        </div>
+                        <ProgressBar value={project.progress} />
                       </td>
                       <td className="nowrap">{formatDate(project.dueDate)}</td>
                     </tr>
@@ -92,6 +120,9 @@ export function Dashboard() {
                 </tbody>
               </table>
             </div>
+            <p className="results-summary">
+              <Link to="/projects">View all {total} projects</Link>
+            </p>
           </div>
         </section>
 
@@ -125,8 +156,9 @@ export function Dashboard() {
           </section>
 
           <section className="card" aria-labelledby="milestones-heading">
-            <div className="card__header">
+            <div className="card__header card__header--split">
               <h2 id="milestones-heading">Upcoming milestones</h2>
+              <SampleBadge />
             </div>
             <div className="card__body">
               <ul>
@@ -148,8 +180,9 @@ export function Dashboard() {
       </div>
 
       <section className="card" aria-labelledby="activity-heading" style={{ marginTop: 'var(--space-4)' }}>
-        <div className="card__header">
+        <div className="card__header card__header--split">
           <h2 id="activity-heading">Recent activity</h2>
+          <SampleBadge />
         </div>
         <div className="card__body">
           <ul>
