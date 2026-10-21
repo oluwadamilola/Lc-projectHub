@@ -1,3 +1,4 @@
+import type { Ref } from 'react'
 import { Icon } from './Icon'
 import { ThemeToggle } from './ThemeToggle'
 import { demoUser } from '../data/demoData'
@@ -7,12 +8,14 @@ interface TopbarProps {
   menuId: string
   menuOpen: boolean
   onMenuClick: () => void
+  menuButtonRef: Ref<HTMLButtonElement>
 }
 
-export function Topbar({ title, menuId, menuOpen, onMenuClick }: TopbarProps) {
+export function Topbar({ title, menuId, menuOpen, onMenuClick, menuButtonRef }: TopbarProps) {
   return (
     <header className="topbar">
       <button
+        ref={menuButtonRef}
         type="button"
         className="icon-btn topbar__menu"
         onClick={onMenuClick}

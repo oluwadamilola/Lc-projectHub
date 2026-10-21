@@ -1,20 +1,9 @@
 /*
   FICTIONAL DEMONSTRATION DATA ONLY.
   Names, places and figures are invented. No college systems or real records are used.
-  Dates are generated relative to today so the demo always looks current.
+  Projects now come from the API; this file holds the dashboard content that has no API yet
+  (milestones, activity, task and equipment figures).
 */
-
-export type ProjectStatus = 'On track' | 'At risk' | 'Delayed' | 'Planning' | 'Complete'
-
-export interface DemoProject {
-  id: string
-  name: string
-  location: string
-  lead: string
-  status: ProjectStatus
-  progress: number
-  dueDate: string
-}
 
 export interface DemoMilestone {
   id: string
@@ -37,63 +26,6 @@ function daysFromNow(days: number): string {
 }
 
 export const demoUser = { name: 'Demo User', initials: 'DU' }
-
-export const demoProjects: DemoProject[] = [
-  {
-    id: 'PRJ-101',
-    name: 'Library Wi-Fi Upgrade',
-    location: 'Demo Library',
-    lead: 'Alex Morgan',
-    status: 'On track',
-    progress: 72,
-    dueDate: daysFromNow(21),
-  },
-  {
-    id: 'PRJ-102',
-    name: 'Lecture Theatre AV Refresh',
-    location: 'Demo Block A',
-    lead: 'Priya Shah',
-    status: 'At risk',
-    progress: 45,
-    dueDate: daysFromNow(14),
-  },
-  {
-    id: 'PRJ-103',
-    name: 'Student Laptop Loan Scheme',
-    location: 'Demo Learning Hub',
-    lead: 'Sam Okafor',
-    status: 'On track',
-    progress: 88,
-    dueDate: daysFromNow(9),
-  },
-  {
-    id: 'PRJ-104',
-    name: 'Workshop Network Cabling',
-    location: 'Demo Engineering Workshop',
-    lead: 'Jordan Ellis',
-    status: 'Delayed',
-    progress: 31,
-    dueDate: daysFromNow(-6),
-  },
-  {
-    id: 'PRJ-105',
-    name: 'Digital Signage Rollout',
-    location: 'Demo Main Entrance',
-    lead: 'Taylor Brooks',
-    status: 'Planning',
-    progress: 8,
-    dueDate: daysFromNow(75),
-  },
-  {
-    id: 'PRJ-106',
-    name: 'Print Service Consolidation',
-    location: 'Demo Block B',
-    lead: 'Alex Morgan',
-    status: 'Complete',
-    progress: 100,
-    dueDate: daysFromNow(-20),
-  },
-]
 
 export const demoMilestones: DemoMilestone[] = [
   {

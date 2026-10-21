@@ -1,16 +1,16 @@
-import express from "express";
-import cors from "cors";
+import { createApp } from './app.js'
+import { buildSeedProjects } from './data/seedProjects.js'
+import { InMemoryProjectRepository } from './repositories/inMemoryProjectRepository.js'
+import { ProjectService } from './services/projectService.js'
 
-const app = express();
-const port = Number(process.env.PORT ?? 4000);
+const port = Number(process.env.PORT ?? 4000)
+const clientOrigin = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173'
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173" }));
-app.use(express.json());
-
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", service: "lc-projecthub-server" });
-});
+// Composition root: the only place that chooses a concrete repository.
+// A SQL Server repository would be swapped in here.
+const repository = new InMemoryProjectRepository(buildSeedProjects())
+const app = createApp({ projectService: new ProjectService(repository), clientOrigin })
 
 app.listen(port, () => {
-  console.log(`Server listening on http://localhost:${port}`);
-});
+  console.log(`Server listening on http://localhost:${port}`)
+})

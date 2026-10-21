@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import type { Ref } from 'react'
+import { Link, NavLink } from 'react-router-dom'
 import { Icon } from './Icon'
 import { navItems } from '../data/navigation'
 
@@ -6,19 +7,21 @@ interface SidebarProps {
   id: string
   open: boolean
   onClose: () => void
+  closeButtonRef: Ref<HTMLButtonElement>
 }
 
-export function Sidebar({ id, open, onClose }: SidebarProps) {
+export function Sidebar({ id, open, onClose, closeButtonRef }: SidebarProps) {
   return (
     <aside id={id} className="sidebar" data-open={open}>
       <div className="sidebar__header">
-        <NavLink to="/" className="sidebar__brand" onClick={onClose}>
+        {/* A plain Link: a NavLink to "/" would be marked as the current page on every route. */}
+        <Link to="/" className="sidebar__brand" onClick={onClose}>
           <span className="sidebar__logo" aria-hidden="true">
             LC
           </span>
           ProjectHub
-        </NavLink>
-        <button type="button" className="icon-btn sidebar__close" onClick={onClose} aria-label="Close menu">
+        </Link>
+        <button ref={closeButtonRef} type="button" className="icon-btn sidebar__close" onClick={onClose} aria-label="Close menu">
           <Icon name="close" />
         </button>
       </div>
