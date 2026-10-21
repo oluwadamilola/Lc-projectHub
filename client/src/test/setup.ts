@@ -6,7 +6,6 @@ beforeEach(() => {
   // Default: a light, narrow screen. Tests that care install their own.
   installMatchMedia(false)
   localStorage.clear()
-  delete document.documentElement.dataset.theme
 })
 
 afterEach(() => {

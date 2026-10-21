@@ -5,6 +5,16 @@ import {
   type ProjectInput,
   type ProjectInputField,
 } from './types.js'
+import {
+  checkChoice,
+  checkDate,
+  checkText,
+  isPlainObject,
+  rejectUnknownFields,
+  sortByFieldOrder,
+} from './validationHelpers.js'
+
+export { isIsoDate } from './validationHelpers.js'
 
 /*
   Validation for creating and editing projects.
@@ -52,77 +62,16 @@ export type ProjectValidationResult =
   | { ok: true; value: ProjectInput }
   | { ok: false; errors: ApiErrorDetail[] }
 
-const MIN_YEAR = 1900
-const MAX_YEAR = 2100
-
-/** True for a real calendar date written as YYYY-MM-DD (so 2026-02-30 is rejected). */
-export function isIsoDate(value: string): boolean {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (!match) return false
-  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])]
-  if (year < MIN_YEAR || year > MAX_YEAR) return false
-  const date = new Date(Date.UTC(year, month - 1, day))
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
-}
-
-/** Control characters have no place in these fields; only the description may contain line breaks. */
-function hasForbiddenCharacter(value: string, allowLineBreaks: boolean): boolean {
-  for (const character of value) {
-    const code = character.charCodeAt(0)
-    const isLineBreak = code === 0x0a || code === 0x0d
-    if ((code < 0x20 && !(allowLineBreaks && isLineBreak)) || code === 0x7f) return true
-  }
-  return false
-}
-
 type TextField = keyof typeof PROJECT_TEXT_LIMITS
 
-function checkText(field: TextField, raw: unknown, errors: ApiErrorDetail[]): string {
-  const label = LABELS[field]
-  if (raw === undefined || raw === null) {
-    errors.push({ field, message: `Enter the ${label}.` })
-    return ''
-  }
-  if (typeof raw !== 'string') {
-    errors.push({ field, message: `The ${label} must be text.` })
-    return ''
-  }
-  const value = raw.trim()
-  if (value === '') {
-    errors.push({ field, message: `Enter the ${label}.` })
-  } else if (value.length > PROJECT_TEXT_LIMITS[field]) {
-    errors.push({ field, message: `The ${label} must be ${PROJECT_TEXT_LIMITS[field]} characters or fewer.` })
-  } else if (hasForbiddenCharacter(value, field === 'description')) {
-    errors.push({ field, message: `The ${label} contains characters that are not allowed.` })
-  }
-  return value
-}
-
-function checkChoice<T extends string>(
-  field: 'priority' | 'status',
-  raw: unknown,
-  allowed: readonly T[],
-  errors: ApiErrorDetail[],
-): T | undefined {
-  if (raw === undefined || raw === null || raw === '') {
-    errors.push({ field, message: `Choose a ${LABELS[field]}.` })
-    return undefined
-  }
-  const match = allowed.find((option) => option === raw)
-  if (!match) errors.push({ field, message: `The ${LABELS[field]} must be one of: ${allowed.join(', ')}.` })
-  return match
-}
-
-function checkDate(field: 'startDate' | 'dueDate', raw: unknown, errors: ApiErrorDetail[]): string | undefined {
-  if (raw === undefined || raw === null || raw === '') {
-    errors.push({ field, message: `Enter the ${LABELS[field]}.` })
-    return undefined
-  }
-  if (typeof raw !== 'string' || !isIsoDate(raw)) {
-    errors.push({ field, message: `Enter a valid ${LABELS[field]}.` })
-    return undefined
-  }
-  return raw
+function text(field: TextField, raw: unknown, errors: ApiErrorDetail[]): string {
+  return checkText(
+    field,
+    LABELS[field],
+    raw,
+    { limit: PROJECT_TEXT_LIMITS[field], required: true, multiline: field === 'description' },
+    errors,
+  )
 }
 
 /**
@@ -130,19 +79,19 @@ function checkDate(field: 'startDate' | 'dueDate', raw: unknown, errors: ApiErro
  * Unknown properties are rejected so a mistyped field name can never be silently dropped.
  */
 export function validateProjectInput(raw: unknown): ProjectValidationResult {
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+  if (!isPlainObject(raw)) {
     return { ok: false, errors: [{ field: 'body', message: 'Send the project as a JSON object.' }] }
   }
-  const input = raw as Record<string, unknown>
+  const input = raw
   const errors: ApiErrorDetail[] = []
 
-  const name = checkText('name', input.name, errors)
-  const description = checkText('description', input.description, errors)
-  const location = checkText('location', input.location, errors)
-  const department = checkText('department', input.department, errors)
-  const lead = checkText('lead', input.lead, errors)
-  const priority = checkChoice('priority', input.priority, PROJECT_PRIORITIES, errors)
-  const status = checkChoice('status', input.status, PROJECT_STATUSES, errors)
+  const name = text('name', input.name, errors)
+  const description = text('description', input.description, errors)
+  const location = text('location', input.location, errors)
+  const department = text('department', input.department, errors)
+  const lead = text('lead', input.lead, errors)
+  const priority = checkChoice('priority', LABELS.priority, input.priority, PROJECT_PRIORITIES, errors)
+  const status = checkChoice('status', LABELS.status, input.status, PROJECT_STATUSES, errors)
 
   let progress: number | undefined
   if (typeof input.progress === 'number' && Number.isInteger(input.progress) && input.progress >= 0 && input.progress <= 100) {
@@ -154,23 +103,14 @@ export function validateProjectInput(raw: unknown): ProjectValidationResult {
     errors.push({ field: 'progress', message: 'Enter the progress as a whole number from 0 to 100.' })
   }
 
-  const startDate = checkDate('startDate', input.startDate, errors)
-  const dueDate = checkDate('dueDate', input.dueDate, errors)
+  const startDate = checkDate('startDate', LABELS.startDate, input.startDate, errors)
+  const dueDate = checkDate('dueDate', LABELS.dueDate, input.dueDate, errors)
   if (startDate && dueDate && dueDate < startDate) {
     errors.push({ field: 'dueDate', message: 'The target completion date must be on or after the start date.' })
   }
 
-  const known: readonly string[] = PROJECT_INPUT_FIELDS
-  for (const key of Object.keys(input)) {
-    if (!known.includes(key)) errors.push({ field: key, message: 'This field is not recognised.' })
-  }
-
-  // Report errors in form order (unknown fields last).
-  const rank = (field: string) => {
-    const index = known.indexOf(field)
-    return index === -1 ? known.length : index
-  }
-  errors.sort((a, b) => rank(a.field) - rank(b.field))
+  rejectUnknownFields(input, PROJECT_INPUT_FIELDS, errors)
+  sortByFieldOrder(errors, PROJECT_INPUT_FIELDS)
 
   if (errors.length > 0 || !priority || !status || progress === undefined || !startDate || !dueDate) {
     return { ok: false, errors }

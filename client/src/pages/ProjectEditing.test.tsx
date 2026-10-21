@@ -3,7 +3,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiRequestError } from '../api/http'
 import { createProject, getProject, getProjects, updateProject } from '../api/projects'
-import { ThemeProvider } from '../theme/ThemeProvider'
+import { getTasks, getTechnicians } from '../api/tasks'
 import { routes } from '../routes'
 import { listResponse, projectA } from '../test/fixtures'
 
@@ -13,6 +13,7 @@ vi.mock('../api/projects', () => ({
   createProject: vi.fn(),
   updateProject: vi.fn(),
 }))
+vi.mock('../api/tasks', () => ({ getTasks: vi.fn(), getTechnicians: vi.fn() }))
 const getProjectsMock = vi.mocked(getProjects)
 const getProjectMock = vi.mocked(getProject)
 const createMock = vi.mocked(createProject)
@@ -22,9 +23,7 @@ const updateMock = vi.mocked(updateProject)
 function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   render(
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>,
+    <RouterProvider router={router} />,
   )
   return router
 }
@@ -45,6 +44,9 @@ function fillNewProject() {
 beforeEach(() => {
   getProjectsMock.mockReset().mockResolvedValue(listResponse([projectA]))
   getProjectMock.mockReset()
+  // The project detail page also lists the project's tasks; none are needed here.
+  vi.mocked(getTasks).mockReset().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 10, total: 0, totalPages: 0 } })
+  vi.mocked(getTechnicians).mockReset().mockResolvedValue([])
   createMock.mockReset()
   updateMock.mockReset()
 })
@@ -83,7 +85,7 @@ describe('creating a project', () => {
 
     expect(await screen.findByRole('heading', { name: 'Foxtrot Wi-Fi', level: 1 })).toBeTruthy()
     expect(router.state.location.pathname).toBe('/projects/PRJ-113')
-    expect(screen.getByRole('status', { name: '' }).textContent).toBe('Project PRJ-113 was created.')
+    expect(screen.getByText('Project PRJ-113 was created.')).toBeTruthy()
     expect(createMock).toHaveBeenCalledTimes(1)
     expect(createMock).toHaveBeenCalledWith({
       name: 'Foxtrot Wi-Fi',

@@ -5,6 +5,7 @@ import { PriorityBadge, StatusBadge } from '../components/StatusBadge'
 import { ProgressBar } from '../components/ProgressBar'
 import { LoadingState } from '../components/StateMessage'
 import { ProjectLoadFailure } from '../components/ProjectLoadFailure'
+import { ProjectTasks } from '../components/ProjectTasks'
 import { useApiResource } from '../hooks/useApiResource'
 import { describeDeadline, formatDate } from '../lib/format'
 
@@ -146,6 +147,10 @@ export function ProjectDetailPage() {
             </div>
           </section>
         </div>
+      </div>
+
+      <div className="detail-tasks">
+        <ProjectTasks projectId={project.id} />
       </div>
     </>
   )

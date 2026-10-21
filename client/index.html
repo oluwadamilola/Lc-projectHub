@@ -1,24 +1,11 @@
 <!doctype html>
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <title>LC ProjectHub</title>
-    <script>
-      // Apply the theme before first paint (no flash). A saved light/dark choice wins; otherwise the
-      // system preference decides the starting theme. Keep in step with src/theme/ThemeProvider.tsx.
-      ;(function () {
-        var theme = 'light'
-        try {
-          var saved = localStorage.getItem('lc-projecthub-theme')
-          var dark = window.matchMedia('(prefers-color-scheme: dark)').matches
-          theme = saved === 'dark' || (saved !== 'light' && dark) ? 'dark' : 'light'
-        } catch (e) {}
-        document.documentElement.dataset.theme = theme
-      })()
-    </script>
   </head>
   <body>
     <div id="root"></div>
