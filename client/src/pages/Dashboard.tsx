@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from '../components/StateMessage'
 import { SampleBadge } from '../components/SampleBadge'
 import { StatCard } from '../components/StatCard'
 import { StatusBadge } from '../components/StatusBadge'
+import { TasksDueThisWeekCard } from '../components/TasksDueThisWeekCard'
 import { demoActivity, demoMilestones, demoStats } from '../data/demoData'
 import { useApiResource } from '../hooks/useApiResource'
 import { formatDate } from '../lib/format'
@@ -70,7 +71,7 @@ function DashboardContent({ projects, total }: { projects: Project[]; total: num
       <section className="stat-grid" aria-label="Key figures">
         <StatCard label="Active projects" value={active.length} hint={`${total} projects in total`} />
         <StatCard label="Need attention" value={attention.length} hint="At risk or delayed" />
-        <StatCard label="Tasks due this week" value={demoStats.tasksDueThisWeek} hint="Across all projects" sample />
+        <TasksDueThisWeekCard projects={projects} partialProjects={partial} />
         <StatCard
           label="Equipment deployed"
           value={`${demoStats.equipmentDeployed} / ${demoStats.equipmentTotal}`}

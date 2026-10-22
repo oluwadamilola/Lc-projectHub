@@ -733,3 +733,11 @@
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
   }
 }
+
+/* Small button, for example the retry inside a statistic card */
+.btn--small {
+  min-height: 2rem;
+  margin-top: var(--space-2);
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
