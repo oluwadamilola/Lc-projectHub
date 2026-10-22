@@ -2,7 +2,7 @@
   FICTIONAL DEMONSTRATION DATA ONLY.
   Names, places and figures are invented. No college systems or real records are used.
   Projects now come from the API; this file holds the dashboard content that has no API yet
-  (milestones, activity, task and equipment figures).
+  (milestones, activity and equipment figures). Task figures are calculated from the tasks API.
 */
 
 export interface DemoMilestone {
@@ -62,7 +62,6 @@ export const demoActivity: DemoActivity[] = [
 ]
 
 export const demoStats = {
-  tasksDueThisWeek: 14,
   equipmentDeployed: 126,
   equipmentTotal: 160,
 }
