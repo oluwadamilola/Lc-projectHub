@@ -1,6 +1,5 @@
 import type { Ref } from 'react'
 import { Icon } from './Icon'
-import { ThemeToggle } from './ThemeToggle'
 import { demoUser } from '../data/demoData'
 
 interface TopbarProps {
@@ -26,7 +25,6 @@ export function Topbar({ title, menuId, menuOpen, onMenuClick, menuButtonRef }: 
         <Icon name="menu" />
       </button>
       <p className="topbar__title">{title}</p>
-      <ThemeToggle />
       <div className="user-chip">
         <span className="user-chip__avatar" aria-hidden="true">
           {demoUser.initials}

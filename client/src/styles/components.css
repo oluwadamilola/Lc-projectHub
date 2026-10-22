@@ -19,37 +19,6 @@
   background: var(--surface-raised);
 }
 
-/* Theme switcher: three-way radio group */
-.theme-toggle {
-  display: inline-flex;
-  padding: 2px;
-  gap: 2px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-}
-
-.theme-toggle__option {
-  display: grid;
-  place-items: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 0;
-  border-radius: calc(var(--radius-md) - 2px);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.theme-toggle__option:hover {
-  color: var(--text);
-}
-
-.theme-toggle__option[aria-checked='true'] {
-  background: var(--btn-bg);
-  color: var(--btn-text);
-}
-
 .user-chip {
   display: flex;
   align-items: center;
@@ -189,6 +158,9 @@
 /* Tables */
 .table-scroll {
   overflow-x: auto;
+  /* Contains absolutely positioned content (such as visually hidden labels) inside the scroller;
+     otherwise it sits at the far right of a wide table and widens the whole page. */
+  position: relative;
 }
 
 .data-table {
@@ -415,6 +387,8 @@
 
 .field {
   display: grid;
+  /* Keep controls at their natural height when a neighbour in the same row is taller (for example a long hint). */
+  align-content: start;
   gap: var(--space-1);
   min-width: 0;
 }
@@ -601,4 +575,161 @@
   color: var(--warning-text);
   font-size: var(--text-sm);
   font-weight: 600;
+}
+
+/* Page header actions */
+.page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Forms */
+.form-card {
+  padding: var(--space-4);
+  max-width: 48rem;
+}
+
+.form-note {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-4);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 40rem) {
+  .form-card {
+    padding: var(--space-5);
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.input--area {
+  min-height: 7rem;
+  padding: var(--space-2) var(--space-3);
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger-text);
+  border-width: 2px;
+}
+
+.input:disabled {
+  opacity: 0.7;
+}
+
+.field__hint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.field__error {
+  color: var(--danger-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.error-summary {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--danger-text);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.error-summary h2 {
+  font-size: var(--text-base);
+}
+
+.error-summary ul {
+  margin-top: var(--space-2);
+  padding-left: var(--space-4);
+  list-style: disc;
+}
+
+.error-summary a {
+  color: inherit;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 39.99rem) {
+  .form-actions .btn {
+    flex: 1 1 100%;
+  }
+}
+
+.leave-dialog {
+  max-width: 48rem;
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-color: var(--warning-text);
+  border-width: 2px;
+}
+
+.leave-dialog p {
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.notice--success {
+  border-color: var(--success-text);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+/* Tasks */
+.detail-tasks {
+  margin-top: var(--space-4);
+}
+
+.count {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.badge--inline {
+  margin-left: var(--space-2);
+}
+
+/* A task title may be long: let it wrap instead of stretching the table. */
+.data-table .data-table__wrap {
+  white-space: normal;
+  min-width: 12rem;
+}
+
+@media (min-width: 40rem) {
+  .toolbar--tasks {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
 }

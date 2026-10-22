@@ -3,10 +3,12 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiRequestError } from '../api/http'
 import { getProject } from '../api/projects'
+import { getTasks, getTechnicians } from '../api/tasks'
 import { projectA } from '../test/fixtures'
 import { ProjectDetailPage } from './ProjectDetailPage'
 
 vi.mock('../api/projects', () => ({ getProjects: vi.fn(), getProject: vi.fn() }))
+vi.mock('../api/tasks', () => ({ getTasks: vi.fn(), getTechnicians: vi.fn() }))
 const getProjectMock = vi.mocked(getProject)
 
 function renderPage(id: string) {
@@ -21,6 +23,8 @@ function renderPage(id: string) {
 
 beforeEach(() => {
   getProjectMock.mockReset()
+  vi.mocked(getTasks).mockReset().mockResolvedValue({ data: [], meta: { page: 1, pageSize: 10, total: 0, totalPages: 0 } })
+  vi.mocked(getTechnicians).mockReset().mockResolvedValue([])
 })
 
 describe('ProjectDetailPage', () => {

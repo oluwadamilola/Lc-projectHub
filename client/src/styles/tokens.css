@@ -1,7 +1,7 @@
 /*
-  Design tokens for LC ProjectHub.
+  Design tokens for LC ProjectHub (a single light theme).
   Layer 1: raw brand palette (never used directly in components).
-  Layer 2: semantic tokens that components use; these change per theme.
+  Layer 2: semantic tokens that components use.
 */
 :root {
   /* Brand palette */
@@ -12,7 +12,7 @@
   /* Darker pink for text and filled buttons on light backgrounds (white on it is 6.2:1) */
   --brand-pink-deep: #b8176f;
 
-  /* Type, spacing, shape (theme independent) */
+  /* Type, spacing, shape */
   --font-sans: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -36,9 +36,8 @@
   --focus-ring-width: 3px;
 }
 
-/* Light theme (default) */
-:root,
-:root[data-theme='light'] {
+/* Colours */
+:root {
   color-scheme: light;
 
   --bg: #faf8f7;
@@ -57,14 +56,16 @@
   --btn-text: #ffffff;
   --focus-ring: var(--brand-pink-deep);
 
-  --sidebar-bg: var(--brand-charcoal);
-  --sidebar-text: #e7e5e4;
-  --sidebar-muted: #a8a29e;
-  --sidebar-hover: rgb(255 255 255 / 0.08);
-  --sidebar-active-bg: rgb(235 51 148 / 0.2);
-  --sidebar-active-text: var(--brand-pink-light);
-  --sidebar-border: transparent;
-  --sidebar-focus-ring: var(--brand-pink-light);
+  /* Sidebar: white like the top bar, separated from the page by a border. */
+  --sidebar-bg: var(--surface);
+  --sidebar-border: var(--border);
+  --sidebar-brand-text: var(--text);
+  --sidebar-text: var(--text);
+  --sidebar-muted: var(--text-muted);
+  --sidebar-hover: rgb(28 25 23 / 0.06);
+  --sidebar-active-bg: var(--accent-soft);
+  --sidebar-active-text: var(--brand-pink-deep);
+  --sidebar-focus-ring: var(--focus-ring);
 
   --shadow: 0 1px 2px rgb(28 25 23 / 0.06), 0 4px 12px rgb(28 25 23 / 0.06);
   --overlay: rgb(28 25 23 / 0.55);
@@ -86,48 +87,4 @@
   --chart-3: #b45309;
   --chart-4: #57534e;
   --chart-5: #b91c1c;
-}
-
-/* Dark theme */
-:root[data-theme='dark'] {
-  color-scheme: dark;
-
-  --bg: var(--brand-charcoal);
-  --surface: var(--brand-dark-surface);
-  --surface-raised: #353130;
-  --border: #44403c;
-  --border-strong: #8a827c;
-
-  --text: #f5f5f4;
-  --text-muted: #b5aea8;
-
-  --accent: var(--brand-pink);
-  --accent-text: var(--brand-pink-light);
-  --accent-soft: rgb(235 51 148 / 0.16);
-  --btn-bg: var(--brand-pink-light);
-  --btn-text: var(--brand-charcoal);
-  --focus-ring: var(--brand-pink-light);
-
-  --sidebar-bg: #151211;
-  --sidebar-border: #44403c;
-
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
-  --overlay: rgb(0 0 0 / 0.65);
-
-  --success-bg: #0f3d22;
-  --success-text: #86efac;
-  --warning-bg: #4a2a05;
-  --warning-text: #fcd34d;
-  --danger-bg: #4c1414;
-  --danger-text: #fca5a5;
-  --info-bg: #172a5c;
-  --info-text: #93c5fd;
-  --neutral-bg: #44403c;
-  --neutral-text: #e7e5e4;
-
-  --chart-1: #f7a8cf;
-  --chart-2: #6cb4f0;
-  --chart-3: #f0b54a;
-  --chart-4: #a8a29e;
-  --chart-5: #fca5a5;
 }

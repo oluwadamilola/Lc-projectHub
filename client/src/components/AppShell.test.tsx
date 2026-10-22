@@ -3,21 +3,18 @@ import { act } from 'react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { installMatchMedia } from '../test/matchMedia'
-import { ThemeProvider } from '../theme/ThemeProvider'
 import { AppShell } from './AppShell'
 
 function renderShell(path = '/') {
   return render(
-    <ThemeProvider>
-      <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<p>Home page</p>} />
             <Route path="/projects" element={<p>Projects page</p>} />
           </Route>
         </Routes>
-      </MemoryRouter>
-    </ThemeProvider>,
+      </MemoryRouter>,
   )
 }
 
@@ -77,6 +74,13 @@ describe('AppShell mobile drawer', () => {
     expect(document.title).toBe('Projects | LC ProjectHub')
     // Only the real current page is marked, not the logo link to "/".
     expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
+  })
+
+  it('has a single light look: no theme switch and no theme attribute', () => {
+    renderShell()
+    expect(screen.queryByRole('radiogroup', { name: 'Colour theme' })).toBeNull()
+    expect(screen.queryByRole('radio')).toBeNull()
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
   })
 
   it('drops the drawer state if the window grows to desktop width', () => {

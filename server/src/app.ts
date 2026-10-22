@@ -3,10 +3,15 @@ import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { ApiErrorResponse } from '@lc-projecthub/shared'
 import { AppError } from './errors.js'
 import { createProjectRouter } from './http/projectRoutes.js'
+import { createTaskRouter, createTechnicianRouter } from './http/taskRoutes.js'
 import type { ProjectService } from './services/projectService.js'
+import type { TaskService } from './services/taskService.js'
+import type { TechnicianService } from './services/technicianService.js'
 
 export interface AppDependencies {
   projectService: ProjectService
+  taskService: TaskService
+  technicianService: TechnicianService
   clientOrigin: string
 }
 
@@ -32,7 +37,7 @@ const handleError: ErrorRequestHandler = (err, _req, res, _next) => {
 }
 
 /** Builds the Express app from its dependencies so tests can run it without a real database or port. */
-export function createApp({ projectService, clientOrigin }: AppDependencies): Express {
+export function createApp({ projectService, taskService, technicianService, clientOrigin }: AppDependencies): Express {
   const app = express()
   app.disable('x-powered-by')
 
@@ -43,7 +48,10 @@ export function createApp({ projectService, clientOrigin }: AppDependencies): Ex
     res.json({ status: 'ok', service: 'lc-projecthub-server' })
   })
 
+  // Tasks live under their project; this router is mounted first so /:projectId/tasks never reaches /:id.
+  app.use('/api/projects/:projectId/tasks', createTaskRouter(taskService))
   app.use('/api/projects', createProjectRouter(projectService))
+  app.use('/api/technicians', createTechnicianRouter(technicianService))
 
   app.use('/api', (_req, res) => {
     res.status(404).json(errorBody('NOT_FOUND', 'No such API endpoint.'))

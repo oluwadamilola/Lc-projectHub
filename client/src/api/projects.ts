@@ -1,5 +1,11 @@
-import type { Project, ProjectListParams, ProjectListResponse, ProjectResponse } from '@lc-projecthub/shared'
-import { getJson } from './http'
+import type {
+  Project,
+  ProjectInput,
+  ProjectListParams,
+  ProjectListResponse,
+  ProjectResponse,
+} from '@lc-projecthub/shared'
+import { getJson, sendJson } from './http'
 
 export function getProjects(params: ProjectListParams = {}, signal?: AbortSignal): Promise<ProjectListResponse> {
   const search = new URLSearchParams()
@@ -13,5 +19,15 @@ export function getProjects(params: ProjectListParams = {}, signal?: AbortSignal
 
 export async function getProject(id: string, signal?: AbortSignal): Promise<Project> {
   const body = await getJson<ProjectResponse>(`/api/projects/${encodeURIComponent(id)}`, signal)
+  return body.data
+}
+
+export async function createProject(input: ProjectInput): Promise<Project> {
+  const body = await sendJson<ProjectResponse>('POST', '/api/projects', input)
+  return body.data
+}
+
+export async function updateProject(id: string, input: ProjectInput): Promise<Project> {
+  const body = await sendJson<ProjectResponse>('PUT', `/api/projects/${encodeURIComponent(id)}`, input)
   return body.data
 }
