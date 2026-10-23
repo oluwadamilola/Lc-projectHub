@@ -6,8 +6,11 @@ import { ErrorState, LoadingState } from '../components/StateMessage'
 import { SampleBadge } from '../components/SampleBadge'
 import { StatCard } from '../components/StatCard'
 import { StatusBadge } from '../components/StatusBadge'
+import { OverdueTasksCard } from '../components/OverdueTasksCard'
+import { TasksDueThisWeekCard } from '../components/TasksDueThisWeekCard'
 import { demoActivity, demoMilestones, demoStats } from '../data/demoData'
 import { useApiResource } from '../hooks/useApiResource'
+import { useDashboardTasks } from '../hooks/useDashboardTasks'
 import { formatDate } from '../lib/format'
 
 const statusFills: Record<ProjectStatus, string> = {
@@ -51,6 +54,8 @@ export function Dashboard() {
 function DashboardContent({ projects, total }: { projects: Project[]; total: number }) {
   // The API returns at most one page, so for very large datasets the figures below cover only part of the data.
   const partial = total > projects.length
+  // One load of every task serves all the task figures below, so they always agree and add no extra requests.
+  const tasks = useDashboardTasks(projects)
   const active = projects.filter((project) => project.status !== 'Complete')
   const attention = projects.filter((project) => project.status === 'At risk' || project.status === 'Delayed')
   const counts = PROJECT_STATUSES.map((status) => ({
@@ -70,7 +75,8 @@ function DashboardContent({ projects, total }: { projects: Project[]; total: num
       <section className="stat-grid" aria-label="Key figures">
         <StatCard label="Active projects" value={active.length} hint={`${total} projects in total`} />
         <StatCard label="Need attention" value={attention.length} hint="At risk or delayed" />
-        <StatCard label="Tasks due this week" value={demoStats.tasksDueThisWeek} hint="Across all projects" sample />
+        <TasksDueThisWeekCard result={tasks} projectCount={projects.length} partialProjects={partial} />
+        <OverdueTasksCard result={tasks} projectCount={projects.length} partialProjects={partial} />
         <StatCard
           label="Equipment deployed"
           value={`${demoStats.equipmentDeployed} / ${demoStats.equipmentTotal}`}

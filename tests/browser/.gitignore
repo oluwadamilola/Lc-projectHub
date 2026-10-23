@@ -1,0 +1,3 @@
+node_modules/
+# Optional screenshots (set SHOTS=screenshots to capture them)
+screenshots/
