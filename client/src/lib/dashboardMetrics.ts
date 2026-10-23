@@ -17,7 +17,8 @@ export interface WeekRange {
   end: string
 }
 
-function toIsoDate(date: Date): string {
+/** A date as YYYY-MM-DD in the viewer's local calendar. */
+export function toIsoDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
   return `${date.getFullYear()}-${month}-${day}`
@@ -51,6 +52,24 @@ export function isOutstandingAndDueInWeek(task: Pick<Task, 'dueDate' | 'status'>
 
 export function countTasksDueInWeek(tasks: readonly Pick<Task, 'dueDate' | 'status'>[], week: WeekRange): number {
   return tasks.filter((task) => isOutstandingAndDueInWeek(task, week)).length
+}
+
+/**
+ * True when the task is overdue: still outstanding (not "Done"), with a real ISO due date that is
+ * strictly before `todayIso`. A task due today is not overdue, and neither is one due later this week.
+ * A missing or invalid due date is never overdue (we cannot know it is late).
+ */
+export function isTaskOverdue(task: Pick<Task, 'dueDate' | 'status'>, todayIso: string): boolean {
+  if (task.status === 'Done') return false
+  const due: unknown = task.dueDate
+  if (typeof due !== 'string' || !isIsoDate(due)) return false
+  return due < todayIso
+}
+
+/** How many tasks are overdue as of `today` (the viewer's local calendar day; the time of day does not matter). */
+export function countOverdueTasks(tasks: readonly Pick<Task, 'dueDate' | 'status'>[], today: Date = new Date()): number {
+  const todayIso = toIsoDate(today)
+  return tasks.filter((task) => isTaskOverdue(task, todayIso)).length
 }
 
 const dayFormat = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })

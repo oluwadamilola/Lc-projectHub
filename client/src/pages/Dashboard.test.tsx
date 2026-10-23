@@ -276,7 +276,8 @@ describe('Dashboard: Tasks due this week', () => {
     getTasksMock.mockResolvedValue(taskListResponse([task('TASK-1', 'PRJ-001', '2026-06-11')]))
     renderPage()
 
-    await within(await screen.findByRole('region', { name: 'Key figures' })).findByRole('alert')
+    await screen.findByRole('region', { name: 'Key figures' })
+    await within(card('Tasks due this week')).findByRole('alert')
     fireEvent.click(within(card('Tasks due this week')).getByRole('button', { name: 'Try again' }))
     await waitFor(() => expect(valueOf('Tasks due this week')).toBe('1'))
     expect(within(card('Tasks due this week')).queryByRole('alert')).toBeNull()
