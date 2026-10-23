@@ -1,0 +1,15 @@
+{
+  "name": "@lc-projecthub/browser-tests",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Isolated browser regression suite for LC ProjectHub (drives the built app in a real browser against a throw-away test server).",
+  "type": "module",
+  "scripts": {
+    "check": "node check.mjs",
+    "test": "node run-suite.mjs --all",
+    "test:stack": "node run-suite.mjs --stack-only"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.1"
+  }
+}
