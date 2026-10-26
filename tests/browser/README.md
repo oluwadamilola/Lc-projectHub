@@ -1,8 +1,8 @@
 # LC ProjectHub browser regression suite
 
 Drives the **built** LC ProjectHub app in a real browser (Playwright) and checks what a person would see and do:
-dashboard figures, projects, tasks, create and edit forms, the mobile menu, error and empty states, accessibility
-basics and the light-only design. It currently contains **six suites and 252 checks**.
+dashboard figures, projects, tasks (per project and across all projects), create and edit forms, the mobile menu, error and empty states, accessibility
+basics and the light-only design. It currently contains **seven suites and 365 checks**.
 
 It is deliberately **isolated**. It never talks to the development server on port 4000, and it fails closed (refuses to
 run) if it cannot prove that.
@@ -49,7 +49,7 @@ From the **repository root**:
 ```
 npm --prefix tests/browser install     # once
 npm run build                          # whenever the app code changed
-npm run test:browser                   # all six suites
+npm run test:browser                   # all seven suites
 ```
 
 Or from `tests/browser`:
@@ -73,6 +73,7 @@ Optional: `SHOTS=screenshots npm test` saves screenshots into `tests/browser/scr
 |---|---|---|
 | `dash` | 28 | "Tasks due this week" against an independent calculation; the five dashboard cards; loading, zero and failure states |
 | `overdue` | 29 | "Overdue tasks" (yesterday, today, tomorrow, Done); shared task requests; failure and retry; layout |
+| `alltasks` | 113 | the All tasks page: navigation, columns, every filter and search (against an independent calculation), URL state, paging, loading / empty / error / retry, overdue boundaries, agreement with the dashboard, phone layout |
 | `tasks` | 62 | task list, filters, paging; create and edit tasks; not-found states; phone layout; existing project features |
 | `editing` | 53 | project create and edit: validation, double-submit guard, failures, unsaved-changes prompt, phone layout |
 | `review` | 59 | light-only design, mobile menu and keyboard use, projects list on a phone, loading/empty/error/not-found, dashboard labels |
@@ -94,8 +95,10 @@ refused everywhere, whatever the settings.
   six technicians). If `server/src/data/seed*.ts` changes, update the suites to match.
 - **Time-sensitive.** Figures such as "due this week" and "overdue" are checked against an independent calculation, but
   tasks are created dated yesterday, today and tomorrow, so a run that straddles local midnight can fail spuriously. Re-run it.
-  The server generates its seed dates in UTC while the browser uses local dates, so results can differ by a day
-  between 00:00 and 01:00 in summer time.
+  The server generates its seed dates in UTC (`toISOString()` in `server/src/data/seedTasks.ts` and `seedProjects.ts`)
+  while the browser uses local dates, so the seeded dates sit a day earlier than the local calendar between 00:00 and
+  01:00 in UK summer time. Confirmed by reproduction; deliberately left unchanged because fixing it alters the seed
+  data itself. The suites compute their expectations from the API's own data, so they only fail spuriously in that hour.
 - **Suites need a fresh server.** Running a suite file directly twice without restarting the test server will give
   different counts the second time. Use the runner, which restarts the server before every suite.
 - **Sequential.** The suites run one after another (about 35 seconds in total on the machine it was developed on, plus a few seconds of preflight).

@@ -741,3 +741,28 @@
   padding: 0 var(--space-3);
   font-size: var(--text-sm);
 }
+
+/* All tasks: the filter bar has six controls, so it wraps onto two rows of three. */
+@media (min-width: 40rem) {
+  .toolbar--all-tasks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .toolbar--all-tasks .field--wide {
+    grid-column: 1 / -1;
+  }
+}
+
+/* A second, smaller line inside a table cell, for example the reference under a task title. */
+.data-table__sub {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.results-counts {
+  padding: var(--space-1) var(--space-4) 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

@@ -317,6 +317,7 @@ describe('when a repository fails', () => {
   const projects: ProjectRepository = new InMemoryProjectRepository(fixtureProjects)
   const failing: TaskRepository = {
     list: () => Promise.reject(new Error('secret-connection-string')),
+    listAll: () => Promise.reject(new Error('secret-connection-string')),
     findById: (id) => Promise.resolve(id === 'TASK-001' ? fixtureTasks[0] : null),
     create: () => Promise.reject(new Error('secret-connection-string')),
     update: () => Promise.reject(new Error('secret-connection-string')),

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TASK_STATUSES, UNASSIGNED_FILTER, MAX_SEARCH_LENGTH, type TaskStatus } from '@lc-projecthub/shared'
+import { TASK_STATUSES, UNASSIGNED_FILTER, MAX_SEARCH_LENGTH, isTaskOverdue, toIsoDate, type TaskStatus } from '@lc-projecthub/shared'
 import { getTasks, getTechnicians } from '../api/tasks'
 import { useApiResource } from '../hooks/useApiResource'
-import { formatDate, isOverdue } from '../lib/format'
+import { formatDate } from '../lib/format'
 import { Pagination } from './Pagination'
 import { EmptyState, ErrorState, LoadingState } from './StateMessage'
 import { PriorityBadge, TaskStatusBadge } from './StatusBadge'
@@ -32,12 +32,15 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
 
   const technicians = useApiResource((signal) => getTechnicians(signal), [])
   const result = useApiResource(
-    (signal) =>
-      getTasks(
+    async (signal) => ({
+      tasks: await getTasks(
         projectId,
         { q: search || undefined, status: status || undefined, assignee: assignee || undefined, page, pageSize: PAGE_SIZE },
         signal,
       ),
+      // "Overdue" is judged from the day the tasks were loaded, using the one rule shared with the dashboard and All tasks.
+      today: toIsoDate(new Date()),
+    }),
     [projectId, search, status, assignee, page],
   )
 
@@ -50,7 +53,8 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
     setPage(1)
   }
 
-  const data = result.data
+  const data = result.data?.tasks
+  const todayIso = result.data?.today ?? ''
   const showError = result.status === 'error'
   const showLoading = result.status === 'loading' && !data
   const addTaskPath = `/projects/${encodeURIComponent(projectId)}/tasks/new`
@@ -196,7 +200,7 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
                         <td className="nowrap">{task.assigneeName ?? <span className="muted">Unassigned</span>}</td>
                         <td className="nowrap">
                           {formatDate(task.dueDate)}
-                          {isOverdue(task.dueDate, task.status === 'Done') && (
+                          {isTaskOverdue(task, todayIso) && (
                             <span className="badge badge--danger badge--inline">Overdue</span>
                           )}
                         </td>

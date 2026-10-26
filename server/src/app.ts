@@ -3,7 +3,7 @@ import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { ApiErrorResponse } from '@lc-projecthub/shared'
 import { AppError } from './errors.js'
 import { createProjectRouter } from './http/projectRoutes.js'
-import { createTaskRouter, createTechnicianRouter } from './http/taskRoutes.js'
+import { createAllTasksRouter, createTaskRouter, createTechnicianRouter } from './http/taskRoutes.js'
 import type { ProjectService } from './services/projectService.js'
 import type { TaskService } from './services/taskService.js'
 import type { TechnicianService } from './services/technicianService.js'
@@ -51,6 +51,7 @@ export function createApp({ projectService, taskService, technicianService, clie
   // Tasks live under their project; this router is mounted first so /:projectId/tasks never reaches /:id.
   app.use('/api/projects/:projectId/tasks', createTaskRouter(taskService))
   app.use('/api/projects', createProjectRouter(projectService))
+  app.use('/api/tasks', createAllTasksRouter(taskService))
   app.use('/api/technicians', createTechnicianRouter(technicianService))
 
   app.use('/api', (_req, res) => {

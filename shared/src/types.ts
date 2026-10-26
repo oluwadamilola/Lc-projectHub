@@ -143,3 +143,44 @@ export interface TaskResponse {
 export interface TechnicianListResponse {
   data: Technician[]
 }
+
+/* ---- Tasks across all projects (GET /api/tasks) ---- */
+
+/** Due-date filters. Both only match outstanding tasks with a valid due date; see `taskDates.ts`. */
+export const TASK_DUE_FILTERS = ['overdue', 'this-week'] as const
+export type TaskDueFilter = (typeof TASK_DUE_FILTERS)[number]
+
+/** A task together with the name of the project that owns it (the reference is `projectId`). */
+export interface CrossProjectTask extends Task {
+  projectName: string
+}
+
+/** Query parameters accepted by GET /api/tasks (all optional on the wire). */
+export interface AllTasksParams {
+  q?: string
+  /** A project reference such as "PRJ-101". */
+  project?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  /** A technician reference, or `UNASSIGNED_FILTER`. */
+  assignee?: string
+  due?: TaskDueFilter
+  /** The viewer's calendar day (YYYY-MM-DD) that "overdue" and "this week" are measured from. Defaults to the server's day. */
+  today?: string
+  page?: number
+  pageSize?: number
+}
+
+/** Counts over every task matching the filters (ignoring paging), using the dashboard's definitions. */
+export interface AllTasksSummary {
+  /** Tasks that are not "Done". */
+  outstanding: number
+  /** Outstanding tasks due before `today`. */
+  overdue: number
+}
+
+export interface AllTasksResponse {
+  data: CrossProjectTask[]
+  meta: PageMeta
+  summary: AllTasksSummary
+}

@@ -18,10 +18,3 @@ export function describeDeadline(dueDate: string, status: ProjectStatus, today: 
   const unit = Math.abs(days) === 1 ? 'day' : 'days'
   return days > 0 ? `Due in ${days} ${unit}` : `Overdue by ${Math.abs(days)} ${unit}`
 }
-
-/** True when the due date has passed (the whole of the due day still counts as on time). */
-export function isOverdue(dueDate: string, done: boolean, today: Date = new Date()): boolean {
-  if (done) return false
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  return new Date(`${dueDate}T00:00:00`).getTime() < startOfToday.getTime()
-}
