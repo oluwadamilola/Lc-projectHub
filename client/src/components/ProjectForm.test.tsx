@@ -233,7 +233,7 @@ describe('ProjectForm saving', () => {
     expect(within(summary).getByRole('link', { name: 'The project lead must be 100 characters or fewer.' })).toBeTruthy()
     expect(field('Project lead').getAttribute('aria-invalid')).toBe('true')
     expect(field('Target completion date').getAttribute('aria-invalid')).toBe('true')
-    expect(document.activeElement).toBe(summary)
+    await waitFor(() => expect(document.activeElement).toBe(summary))
 
     expect(field('Project name').value).toBe('  Foxtrot Wi-Fi ')
     expect(field('Location').value).toBe('Test Annexe')
