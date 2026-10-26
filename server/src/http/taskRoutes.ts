@@ -3,6 +3,7 @@ import type { TaskResponse, TechnicianListResponse } from '@lc-projecthub/shared
 import type { TaskService } from '../services/taskService.js'
 import type { TechnicianService } from '../services/technicianService.js'
 import { parseReference } from './parseProjectQuery.js'
+import { parseAllTasksQuery } from './parseAllTasksQuery.js'
 import { parseTaskQuery } from './parseTaskQuery.js'
 
 /** Route parameters: `projectId` comes from the parent path this router is mounted on. */
@@ -45,6 +46,15 @@ export function createTaskRouter(service: TaskService): Router {
     res.json(body)
   })
 
+  return router
+}
+
+/** Tasks across every project: GET /api/tasks. Read-only; tasks are still created and edited under their project. */
+export function createAllTasksRouter(service: TaskService): Router {
+  const router = Router()
+  router.get('/', async (req, res) => {
+    res.json(await service.listAll(parseAllTasksQuery(req.query)))
+  })
   return router
 }
 

@@ -1,11 +1,12 @@
 import {
   validateTaskInput,
+  type AllTasksResponse,
   type Task,
   type TaskInput,
   type TaskListResponse,
 } from '@lc-projecthub/shared'
 import type { ProjectRepository } from '../domain/projectRepository.js'
-import type { TaskRecord, TaskRepository, TaskSearchCriteria } from '../domain/taskRepository.js'
+import type { AllTasksCriteria, TaskRecord, TaskRepository, TaskSearchCriteria } from '../domain/taskRepository.js'
 import type { TechnicianRepository } from '../domain/technicianRepository.js'
 import { NotFoundError, ValidationError } from '../errors.js'
 
@@ -33,6 +34,32 @@ export class TaskService {
         total,
         totalPages: Math.ceil(total / criteria.pageSize),
       },
+    }
+  }
+
+  /** Tasks of every project (or one, when `projectId` is given), each with the name of its project. */
+  async listAll(criteria: AllTasksCriteria): Promise<AllTasksResponse> {
+    if (criteria.projectId) await this.requireProject(criteria.projectId)
+    const { items, total, outstanding, overdue } = await this.tasks.listAll(criteria)
+    const names = await this.technicianNames()
+    const projectNames = new Map<string, string>()
+    for (const projectId of new Set(items.map((item) => item.projectId))) {
+      const project = await this.projects.findById(projectId)
+      // A task whose project is missing should not happen; show its reference rather than hide the task.
+      projectNames.set(projectId, project?.name ?? projectId)
+    }
+    return {
+      data: items.map((record) => ({
+        ...this.withAssignee(record, names),
+        projectName: projectNames.get(record.projectId) ?? record.projectId,
+      })),
+      meta: {
+        page: criteria.page,
+        pageSize: criteria.pageSize,
+        total,
+        totalPages: Math.ceil(total / criteria.pageSize),
+      },
+      summary: { outstanding, overdue },
     }
   }
 
