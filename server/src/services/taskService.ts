@@ -72,6 +72,8 @@ export class TaskService {
   async create(projectId: string, rawInput: unknown): Promise<Task> {
     await this.requireProject(projectId)
     const input = await this.validate(rawInput)
+    // Checked again, with nothing in between, so a project deleted while the body was being checked gets no new task.
+    await this.requireProject(projectId)
     const record = await this.tasks.create(projectId, input)
     return this.withAssignee(record, await this.technicianNames())
   }
@@ -85,6 +87,16 @@ export class TaskService {
     // Covers the task disappearing between the check above and the write.
     if (!record) throw new NotFoundError(this.taskNotFound(taskId, projectId))
     return this.withAssignee(record, await this.technicianNames())
+  }
+
+  /** Order of checks: project (404), task in that project (404). Asking again after it is gone is a 404. */
+  async delete(projectId: string, taskId: string): Promise<Task> {
+    await this.requireProject(projectId)
+    await this.requireTask(projectId, taskId)
+    const removed = await this.tasks.delete(taskId)
+    // Covers the task disappearing between the check above and the removal.
+    if (!removed) throw new NotFoundError(this.taskNotFound(taskId, projectId))
+    return this.withAssignee(removed, await this.technicianNames())
   }
 
   private async validate(rawInput: unknown): Promise<TaskInput> {

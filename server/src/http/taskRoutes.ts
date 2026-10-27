@@ -46,6 +46,12 @@ export function createTaskRouter(service: TaskService): Router {
     res.json(body)
   })
 
+  router.delete<TaskParams>('/:taskId', async (req, res) => {
+    const projectId = parseReference(req.params.projectId, 'projectId')
+    const body: TaskResponse = { data: await service.delete(projectId, parseReference(req.params.taskId, 'taskId')) }
+    res.json(body)
+  })
+
   return router
 }
 

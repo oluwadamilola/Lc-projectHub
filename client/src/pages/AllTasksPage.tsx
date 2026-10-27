@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   MAX_PAGE_SIZE,
@@ -12,6 +12,8 @@ import {
   toIsoDate,
   type AllTasksParams,
   type AllTasksResponse,
+  type CrossProjectTask,
+  type Task,
   type TaskDueFilter,
   type TaskPriority,
   type TaskStatus,
@@ -19,6 +21,7 @@ import {
 import { getProjects } from '../api/projects'
 import { searchTasks } from '../api/taskSearch'
 import { getTechnicians } from '../api/tasks'
+import { DeleteTaskDialog } from '../components/DeleteTaskDialog'
 import { Pagination } from '../components/Pagination'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateMessage'
 import { PriorityBadge, TaskStatusBadge } from '../components/StatusBadge'
@@ -65,6 +68,11 @@ export function AllTasksPage() {
   const page = readPage(searchParams.get('page'))
 
   const [searchText, setSearchText] = useState(q)
+  // The task whose deletion is being confirmed, and the confirmation shown after one succeeds.
+  const [deleting, setDeleting] = useState<CrossProjectTask | null>(null)
+  const [notice, setNotice] = useState<{ key: number; text: string } | null>(null)
+  const noticeKey = useRef(0)
+  const noticeRef = useRef<HTMLParagraphElement>(null)
 
   const updateParams = useCallback(
     (changes: Record<string, string | number | undefined>) => {
@@ -112,6 +120,20 @@ export function AllTasksPage() {
   // On any failure show only the error: rows left over from a previous query would not match the filters now chosen.
   const showError = result.status === 'error'
   const projectList = projects.data?.data ?? []
+
+  // Move focus to the confirmation so keyboard and screen-reader users are not left on a row that no longer exists.
+  useEffect(() => {
+    if (notice) noticeRef.current?.focus()
+  }, [notice])
+
+  function handleDeleted(task: Task) {
+    setDeleting(null)
+    noticeKey.current += 1
+    setNotice({ key: noticeKey.current, text: `Task ${task.id} “${task.title}” was deleted.` })
+    // Deleting the only task on a later page would leave an empty page, so step back to the previous one.
+    if (data && data.data.length === 1 && page > 1) updateParams({ page: page - 1 })
+    else result.reload()
+  }
   const projectKnown = project === undefined || projectList.some((entry) => entry.id === project)
 
   return (
@@ -242,6 +264,21 @@ export function AllTasksPage() {
           </button>
         </form>
 
+        {deleting && (
+          <DeleteTaskDialog
+            task={deleting}
+            onCancel={() => setDeleting(null)}
+            onDeleted={handleDeleted}
+            onAlreadyGone={result.reload}
+          />
+        )}
+
+        {notice && (
+          <p key={notice.key} ref={noticeRef} className="notice notice--success notice--inline" role="status" tabIndex={-1}>
+            {notice.text}
+          </p>
+        )}
+
         {showLoading && <LoadingState label="Loading tasks…" />}
 
         {showError && <ErrorState title="Tasks could not be loaded" message={result.error.message} onRetry={result.reload} />}
@@ -321,6 +358,12 @@ export function AllTasksPage() {
                                 task {task.id}: {task.title}
                               </span>
                             </Link>
+                            <button type="button" className="table-link table-link--danger" onClick={() => setDeleting(task)}>
+                              Delete{' '}
+                              <span className="visually-hidden">
+                                task {task.id}: {task.title}
+                              </span>
+                            </button>
                           </td>
                         </tr>
                       ))}

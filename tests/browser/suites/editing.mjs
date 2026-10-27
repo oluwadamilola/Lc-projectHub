@@ -293,8 +293,9 @@ try {
   check('J3 detail page still works', true)
   const health = await (await fetch(`${API}/api/health`)).json()
   check('J4 /api/health still works', health.status === 'ok')
-  const del = await fetch(`${API}/api/projects/PRJ-101`, { method: 'DELETE' })
-  check('J5 there is no DELETE endpoint (404) and the project is intact', del.status === 404 && (await fetch(`${API}/api/projects/PRJ-101`)).status === 200)
+  const bulk = await fetch(`${API}/api/projects`, { method: 'DELETE' })
+  const patch = await fetch(`${API}/api/projects/PRJ-101`, { method: 'PATCH' })
+  check('J5 there is no delete-every-project or partial-update endpoint (404) and the project is intact (deleting one project is covered by the deletion suite)', bulk.status === 404 && patch.status === 404 && (await fetch(`${API}/api/projects/PRJ-101`)).status === 200)
   await ctx.close()
 } catch (e) { check('SECTION J aborted', false, String(e.message).slice(0, 300)) }
 

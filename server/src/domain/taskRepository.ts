@@ -61,4 +61,10 @@ export interface TaskRepository {
   create(projectId: string, input: TaskInput): Promise<TaskRecord>
   /** Replaces every editable field of a task. The project and reference never change. Null if it does not exist. */
   update(id: string, input: TaskInput): Promise<TaskRecord | null>
+  /** Removes one task and returns it, or null if it does not exist. References are never reused. */
+  delete(id: string): Promise<TaskRecord | null>
+  /** Removes every task of a project and returns them (none is fine). */
+  deleteByProject(projectId: string): Promise<TaskRecord[]>
+  /** Puts back tasks removed by `deleteByProject`, exactly as they were. Used to undo a project deletion that failed. */
+  restore(tasks: readonly TaskRecord[]): Promise<void>
 }

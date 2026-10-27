@@ -68,3 +68,8 @@ export function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 export function sendJson<T>(method: 'POST' | 'PUT', path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   return requestJson<T>(method, path, body, signal)
 }
+
+/** DELETE has no body. The server answers with what was deleted. */
+export function deleteJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  return requestJson<T>('DELETE', path, undefined, signal)
+}

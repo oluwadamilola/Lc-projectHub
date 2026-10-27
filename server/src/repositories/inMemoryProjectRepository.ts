@@ -66,4 +66,12 @@ export class InMemoryProjectRepository implements ProjectRepository {
     this.projects = this.projects.map((project, position) => (position === index ? updated : project))
     return { ...updated }
   }
+
+  async delete(id: string): Promise<Project | null> {
+    const existing = this.projects.find((candidate) => candidate.id === id)
+    if (!existing) return null
+    // lastReferenceNumber is deliberately left alone, so a deleted project's reference is never given to a new one.
+    this.projects = this.projects.filter((project) => project.id !== id)
+    return { ...existing }
+  }
 }

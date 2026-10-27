@@ -32,7 +32,7 @@ export async function startTestServer(
   const technicianRepository: TechnicianRepository =
     technicians && 'list' in technicians ? technicians : new InMemoryTechnicianRepository(technicians ?? [])
   const app = createApp({
-    projectService: new ProjectService(projects),
+    projectService: new ProjectService(projects, taskRepository),
     taskService: new TaskService(taskRepository, technicianRepository, projects),
     technicianService: new TechnicianService(technicianRepository),
     clientOrigin: 'http://localhost:5173',

@@ -233,6 +233,9 @@ describe('GET /api/tasks when the repository fails', () => {
       findById: () => Promise.resolve(null),
       create: () => Promise.reject(new Error('secret-connection-string')),
       update: () => Promise.reject(new Error('secret-connection-string')),
+      delete: () => Promise.reject(new Error('secret-connection-string')),
+      deleteByProject: () => Promise.reject(new Error('secret-connection-string')),
+      restore: () => Promise.reject(new Error('secret-connection-string')),
     }
     const broken = await startTestServer(new InMemoryProjectRepository(fixtureProjects), { tasks: failing })
     try {

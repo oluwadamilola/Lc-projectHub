@@ -18,7 +18,7 @@ const tasks = new InMemoryTaskRepository(buildSeedTasks())
 const technicians = new InMemoryTechnicianRepository(seedTechnicians)
 
 const app = createApp({
-  projectService: new ProjectService(projects),
+  projectService: new ProjectService(projects, tasks),
   taskService: new TaskService(tasks, technicians, projects),
   technicianService: new TechnicianService(technicians),
   clientOrigin,

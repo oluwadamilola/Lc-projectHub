@@ -7,7 +7,7 @@ import type {
   Technician,
   TechnicianListResponse,
 } from '@lc-projecthub/shared'
-import { getJson, sendJson } from './http'
+import { deleteJson, getJson, sendJson } from './http'
 
 const tasksPath = (projectId: string) => `/api/projects/${encodeURIComponent(projectId)}/tasks`
 
@@ -34,6 +34,12 @@ export async function createTask(projectId: string, input: TaskInput): Promise<T
 
 export async function updateTask(projectId: string, taskId: string, input: TaskInput): Promise<Task> {
   const body = await sendJson<TaskResponse>('PUT', `${tasksPath(projectId)}/${encodeURIComponent(taskId)}`, input)
+  return body.data
+}
+
+/** Deletes one task for good. Resolves to the task that was deleted; rejects (404) if it is already gone. */
+export async function deleteTask(projectId: string, taskId: string): Promise<Task> {
+  const body = await deleteJson<TaskResponse>(`${tasksPath(projectId)}/${encodeURIComponent(taskId)}`)
   return body.data
 }
 

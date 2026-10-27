@@ -115,4 +115,30 @@ export class InMemoryTaskRepository implements TaskRepository {
     this.tasks = this.tasks.map((task) => (task.id === id ? updated : task))
     return { ...updated }
   }
+
+  async delete(id: string): Promise<TaskRecord | null> {
+    const existing = this.tasks.find((candidate) => candidate.id === id)
+    if (!existing) return null
+    // lastReferenceNumber is deliberately left alone, so a deleted task's reference is never given to a new one.
+    this.tasks = this.tasks.filter((task) => task.id !== id)
+    return { ...existing }
+  }
+
+  async deleteByProject(projectId: string): Promise<TaskRecord[]> {
+    const removed = this.tasks.filter((task) => task.projectId === projectId)
+    if (removed.length > 0) this.tasks = this.tasks.filter((task) => task.projectId !== projectId)
+    return removed.map((task) => ({ ...task }))
+  }
+
+  async restore(tasks: readonly TaskRecord[]): Promise<void> {
+    const present = new Set(this.tasks.map((task) => task.id))
+    const missing: TaskRecord[] = []
+    for (const task of tasks) {
+      // A reference already in use (stored, or earlier in this list) is never overwritten or duplicated.
+      if (present.has(task.id)) continue
+      present.add(task.id)
+      missing.push({ ...task })
+    }
+    if (missing.length > 0) this.tasks = [...this.tasks, ...missing].sort(byReference)
+  }
 }

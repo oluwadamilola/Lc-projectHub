@@ -30,5 +30,10 @@ export function createProjectRouter(service: ProjectService): Router {
     res.json(body)
   })
 
+  // Deleting a project also deletes its tasks; the answer says how many went with it.
+  router.delete('/:id', async (req, res) => {
+    res.json(await service.delete(parseProjectId(req.params.id)))
+  })
+
   return router
 }
