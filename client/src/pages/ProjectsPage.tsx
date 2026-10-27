@@ -7,6 +7,7 @@ import { PriorityBadge, StatusBadge } from '../components/StatusBadge'
 import { ProgressBar } from '../components/ProgressBar'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateMessage'
 import { useApiResource } from '../hooks/useApiResource'
+import { useFlashNotice } from '../hooks/useFlashNotice'
 
 const PAGE_SIZE = 10
 const SEARCH_DEBOUNCE_MS = 300
@@ -28,6 +29,7 @@ export function ProjectsPage() {
   const page = readPage(searchParams.get('page'))
 
   const [searchText, setSearchText] = useState(q)
+  const notice = useFlashNotice()
 
   // Functional form keeps this function stable, so the debounce effect below only restarts when typing changes.
   const updateParams = useCallback(
@@ -85,6 +87,12 @@ export function ProjectsPage() {
           </Link>
         </div>
       </div>
+
+      {notice && (
+        <p className="notice notice--success" role="status">
+          {notice}
+        </p>
+      )}
 
       <section className="card" aria-label="Project list">
         <form className="toolbar" role="search" onSubmit={(event) => event.preventDefault()}>

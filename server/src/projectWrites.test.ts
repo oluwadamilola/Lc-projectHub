@@ -214,11 +214,8 @@ describe('PUT /api/projects/:id', () => {
 })
 
 describe('what is not supported', () => {
-  it('has no delete or partial-update endpoints', async () => {
-    for (const method of ['DELETE', 'PATCH']) {
-      const response = await send(method, '/api/projects/PRJ-001')
-      expect(response.status).toBe(404)
-    }
+  it('has no partial-update endpoint (deleting is covered in projectDeletion.test.ts)', async () => {
+    expect((await send('PATCH', '/api/projects/PRJ-001')).status).toBe(404)
     expect((await getJson('/api/projects/PRJ-001')).data.name).toBe('Alpha Network')
   })
 
@@ -234,6 +231,7 @@ describe('when the repository fails', () => {
     findById: (id) => Promise.resolve(id === 'PRJ-001' ? fixtureProjects[0] : null),
     create: () => Promise.reject(new Error('secret-connection-string')),
     update: () => Promise.reject(new Error('secret-connection-string')),
+    delete: () => Promise.reject(new Error('secret-connection-string')),
   }
   let broken: RunningApp
   beforeEach(async () => {

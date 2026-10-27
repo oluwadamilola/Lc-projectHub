@@ -305,7 +305,7 @@ try {
   const look = await lightOnly.page.evaluate(() => ({ bg: getComputedStyle(document.body).backgroundColor, scheme: getComputedStyle(document.documentElement).colorScheme, attr: document.documentElement.hasAttribute('data-theme') }))
   check('P5 the app stays light-only: no theme switch, no theme attribute, light page, even with a dark system setting and a stale saved "dark"', look.bg === 'rgb(250, 248, 247)' && look.scheme === 'light' && !look.attr && (await lightOnly.page.getByRole('radio').count()) === 0 && (await lightOnly.page.getByRole('radiogroup').count()) === 0, JSON.stringify(look))
   await lightOnly.ctx.close()
-  check('P6 /api/health ok; deleting a project or task is not possible', (await api('/api/health')).status === 'ok' && (await fetch(API + '/api/projects/PRJ-101', { method: 'DELETE' })).status === 404 && (await fetch(API + '/api/projects/PRJ-101/tasks/TASK-001', { method: 'DELETE' })).status === 404)
+  check('P6 /api/health ok; there is still no way to delete every task of a project or every task at once (single deletes live in the deletion suite)', (await api('/api/health')).status === 'ok' && (await fetch(API + '/api/projects/PRJ-101/tasks', { method: 'DELETE' })).status === 404 && (await fetch(API + '/api/tasks', { method: 'DELETE' })).status === 404 && (await fetch(API + '/api/projects/PRJ-101/tasks/TASK-001')).status === 200)
   await ctx.close()
 } catch (e) { check('SECTION P aborted', false, String(e.message).slice(0, 300)) }
 

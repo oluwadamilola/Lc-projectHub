@@ -766,3 +766,68 @@
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
+
+/* Deleting: the danger button, the confirmation dialog, and the Delete action inside tables */
+.btn--danger {
+  border-color: var(--danger-text);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.btn--danger:hover:not(:disabled) {
+  background: var(--danger-text);
+  color: var(--surface);
+}
+
+.confirm-dialog {
+  max-width: 48rem;
+  margin: var(--space-4);
+  padding: var(--space-4);
+  border-color: var(--danger-text);
+  border-width: 2px;
+}
+
+.confirm-dialog__text p {
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+.confirm-dialog__error {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--danger-text);
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.confirm-dialog .form-actions {
+  margin-top: var(--space-3);
+}
+
+button.table-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.table-link--danger {
+  margin-left: var(--space-3);
+  color: var(--danger-text);
+  text-decoration-color: var(--danger-text);
+}
+
+.table-link--danger:hover {
+  color: var(--danger-text);
+  text-decoration-thickness: 2px;
+}
+
+/* A confirmation inside a card, for example "Task TASK-007 was deleted." */
+.notice--inline {
+  margin: var(--space-3) var(--space-4) 0;
+}

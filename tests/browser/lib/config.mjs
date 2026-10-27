@@ -36,4 +36,4 @@ export const DEV_URL = `http://localhost:${DEV_PORT}`
 export const BROWSER_CHANNEL = process.env.BROWSER_CHANNEL ?? 'msedge'
 
 /** Every suite, in the order they are run. Each lives in suites/<name>.mjs. */
-export const SUITES = ['dash', 'overdue', 'tasks', 'alltasks', 'editing', 'review', 'light-only']
+export const SUITES = ['dash', 'overdue', 'tasks', 'alltasks', 'deletion', 'editing', 'review', 'light-only']

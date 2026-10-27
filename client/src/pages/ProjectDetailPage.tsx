@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import type { ProjectDeleteResponse } from '@lc-projecthub/shared'
 import { getProject } from '../api/projects'
+import { DeleteProjectDialog } from '../components/DeleteProjectDialog'
 import { PriorityBadge, StatusBadge } from '../components/StatusBadge'
 import { ProgressBar } from '../components/ProgressBar'
 import { LoadingState } from '../components/StateMessage'
@@ -36,6 +38,21 @@ export function ProjectDetailPage() {
     }
   }, [notice, navigate, location.pathname])
   const result = useApiResource((signal) => getProject(id, signal), [id])
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+
+  // Leave the page of a project that no longer exists. The projects list, All tasks and the dashboard
+  // load their data when opened, so they show the change without any extra refresh.
+  function leaveAfterDelete(text: string) {
+    navigate('/projects', { replace: true, state: { notice: text } })
+  }
+  function handleDeleted({ data: removed, meta }: ProjectDeleteResponse) {
+    const count = meta.deletedTasks
+    leaveAfterDelete(
+      count === 0
+        ? `Project ${removed.id} “${removed.name}” was deleted. It had no tasks.`
+        : `Project ${removed.id} “${removed.name}” and its ${count} ${count === 1 ? 'task were' : 'tasks were'} deleted.`,
+    )
+  }
 
   if (result.status === 'loading' && !result.data) {
     return (
@@ -75,8 +92,20 @@ export function ProjectDetailPage() {
           <Link className="btn btn--primary" to={`/projects/${encodeURIComponent(project.id)}/edit`}>
             Edit project
           </Link>
+          <button type="button" className="btn btn--danger" onClick={() => setConfirmingDelete(true)}>
+            Delete project
+          </button>
         </div>
       </div>
+
+      {confirmingDelete && (
+        <DeleteProjectDialog
+          project={project}
+          onCancel={() => setConfirmingDelete(false)}
+          onDeleted={handleDeleted}
+          onAlreadyGone={() => leaveAfterDelete(`Project ${project.id} had already been deleted.`)}
+        />
+      )}
 
       {notice?.id === project.id && (
         <p className="notice notice--success" role="status">

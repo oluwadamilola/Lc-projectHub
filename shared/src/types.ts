@@ -64,6 +64,12 @@ export interface ProjectResponse {
   data: Project
 }
 
+/** The answer to DELETE /api/projects/:id: the project that was deleted and how many of its tasks went with it. */
+export interface ProjectDeleteResponse {
+  data: Project
+  meta: { deletedTasks: number }
+}
+
 export type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
 
 export interface ApiErrorDetail {

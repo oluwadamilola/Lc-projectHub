@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TASK_STATUSES, UNASSIGNED_FILTER, MAX_SEARCH_LENGTH, isTaskOverdue, toIsoDate, type TaskStatus } from '@lc-projecthub/shared'
+import { TASK_STATUSES, UNASSIGNED_FILTER, MAX_SEARCH_LENGTH, isTaskOverdue, toIsoDate, type Task, type TaskStatus } from '@lc-projecthub/shared'
 import { getTasks, getTechnicians } from '../api/tasks'
 import { useApiResource } from '../hooks/useApiResource'
 import { formatDate } from '../lib/format'
+import { DeleteTaskDialog } from './DeleteTaskDialog'
 import { Pagination } from './Pagination'
 import { EmptyState, ErrorState, LoadingState } from './StateMessage'
 import { PriorityBadge, TaskStatusBadge } from './StatusBadge'
@@ -18,6 +19,11 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
   const [status, setStatus] = useState<TaskStatus | ''>('')
   const [assignee, setAssignee] = useState('')
   const [page, setPage] = useState(1)
+  // The task whose deletion is being confirmed, and the confirmation shown after one succeeds.
+  const [deleting, setDeleting] = useState<Task | null>(null)
+  const [notice, setNotice] = useState<{ key: number; text: string } | null>(null)
+  const noticeKey = useRef(0)
+  const noticeRef = useRef<HTMLParagraphElement>(null)
 
   // Wait for a pause in typing before searching, and go back to page 1 for a new search.
   useEffect(() => {
@@ -58,6 +64,20 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
   const showError = result.status === 'error'
   const showLoading = result.status === 'loading' && !data
   const addTaskPath = `/projects/${encodeURIComponent(projectId)}/tasks/new`
+
+  // Move focus to the confirmation so keyboard and screen-reader users are not left on a row that no longer exists.
+  useEffect(() => {
+    if (notice) noticeRef.current?.focus()
+  }, [notice])
+
+  function handleDeleted(task: Task) {
+    setDeleting(null)
+    noticeKey.current += 1
+    setNotice({ key: noticeKey.current, text: `Task ${task.id} “${task.title}” was deleted.` })
+    // Deleting the only task on a later page would leave an empty page, so step back to the previous one.
+    if (data && data.data.length === 1 && page > 1) setPage(page - 1)
+    else result.reload()
+  }
 
   return (
     <section className="card" aria-labelledby="tasks-heading" id="tasks">
@@ -139,6 +159,21 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
         </button>
       </form>
 
+      {deleting && (
+        <DeleteTaskDialog
+          task={deleting}
+          onCancel={() => setDeleting(null)}
+          onDeleted={handleDeleted}
+          onAlreadyGone={result.reload}
+        />
+      )}
+
+      {notice && (
+        <p key={notice.key} ref={noticeRef} className="notice notice--success notice--inline" role="status" tabIndex={-1}>
+          {notice.text}
+        </p>
+      )}
+
       {showLoading && <LoadingState label="Loading tasks…" />}
 
       {showError && <ErrorState title="Tasks could not be loaded" message={result.error.message} onRetry={result.reload} />}
@@ -211,6 +246,12 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
                               task {task.id}: {task.title}
                             </span>
                           </Link>
+                          <button type="button" className="table-link table-link--danger" onClick={() => setDeleting(task)}>
+                            Delete{' '}
+                            <span className="visually-hidden">
+                              task {task.id}: {task.title}
+                            </span>
+                          </button>
                         </td>
                       </tr>
                     ))}

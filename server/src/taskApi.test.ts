@@ -295,10 +295,8 @@ describe('PUT /api/projects/:id/tasks/:taskId', () => {
 })
 
 describe('what is not supported', () => {
-  it('has no delete or partial-update endpoint for tasks', async () => {
-    for (const method of ['DELETE', 'PATCH']) {
-      expect((await send(method, '/api/projects/PRJ-001/tasks/TASK-001')).status).toBe(404)
-    }
+  it('has no partial-update endpoint for tasks (deleting is covered in taskDeletion.test.ts)', async () => {
+    expect((await send('PATCH', '/api/projects/PRJ-001/tasks/TASK-001')).status).toBe(404)
     expect((await get('/api/projects/PRJ-001/tasks/TASK-001')).status).toBe(200)
   })
 
@@ -321,6 +319,9 @@ describe('when a repository fails', () => {
     findById: (id) => Promise.resolve(id === 'TASK-001' ? fixtureTasks[0] : null),
     create: () => Promise.reject(new Error('secret-connection-string')),
     update: () => Promise.reject(new Error('secret-connection-string')),
+    delete: () => Promise.reject(new Error('secret-connection-string')),
+    deleteByProject: () => Promise.reject(new Error('secret-connection-string')),
+    restore: () => Promise.reject(new Error('secret-connection-string')),
   }
   let broken: RunningApp
   beforeEach(async () => {

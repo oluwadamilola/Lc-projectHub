@@ -30,4 +30,6 @@ export interface ProjectRepository {
   create(input: ProjectInput): Promise<Project>
   /** Replaces every editable field of an existing project. Resolves to null if it does not exist. */
   update(id: string, input: ProjectInput): Promise<Project | null>
+  /** Removes a project and returns it, or null if it does not exist. Its tasks are the service's concern, not the repository's. */
+  delete(id: string): Promise<Project | null>
 }

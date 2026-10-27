@@ -109,6 +109,7 @@ describe('API when the repository fails unexpectedly', () => {
     findById: () => Promise.reject(new Error('boom')),
     create: () => Promise.reject(new Error('boom')),
     update: () => Promise.reject(new Error('boom')),
+    delete: () => Promise.reject(new Error('boom')),
   }
   let running: RunningApp
 
