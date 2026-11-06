@@ -63,12 +63,13 @@ describe('ProjectTasks', () => {
     expect(within(screen.getByText('Survey the site').closest('tr')!).queryByText('Overdue')).toBeNull()
   })
 
-  it('links to add a task and to edit each task, with accessible names', async () => {
+  it('links to add a task and, from the actions menu of each row, to edit that task, with accessible names', async () => {
     getTasksMock.mockResolvedValue(taskListResponse([taskA]))
     renderTasks()
     await screen.findByText('Survey the site')
     expect(screen.getByRole('link', { name: 'Add task' }).getAttribute('href')).toBe('/projects/PRJ-001/tasks/new')
-    const edit = screen.getByRole('link', { name: 'Edit task TASK-001: Survey the site' })
+    fireEvent.click(screen.getByRole('button', { name: 'Actions for task TASK-001: Survey the site' }))
+    const edit = screen.getByRole('menuitem', { name: 'Edit task' })
     expect(edit.getAttribute('href')).toBe('/projects/PRJ-001/tasks/TASK-001/edit')
   })
 

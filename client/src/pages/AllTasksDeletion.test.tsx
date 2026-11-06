@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { AllTasksResponse, CrossProjectTask } from '@lc-projecthub/shared'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +7,7 @@ import { getProjects } from '../api/projects'
 import { searchTasks } from '../api/taskSearch'
 import { deleteTask, getTechnicians } from '../api/tasks'
 import { listResponse, projectA, projectB, taskA, taskB, technicians } from '../test/fixtures'
+import { actionsButton, chooseRowAction } from '../test/taskMenu'
 import { AllTasksPage } from './AllTasksPage'
 
 vi.mock('../api/projects', () => ({ getProjects: vi.fn(), getProject: vi.fn() }))
@@ -53,9 +54,9 @@ describe('deleting from the All tasks page', () => {
     searchMock.mockResolvedValue(response([rowA, rowC]))
     renderPage()
     await screen.findByText('Image the laptops')
-    expect(within(rowOf('Survey the site')).getByRole('button', { name: 'Delete task TASK-001: Survey the site' })).toBeTruthy()
+    expect(actionsButton(rowOf('Survey the site')).getAttribute('aria-label')).toBe('Actions for task TASK-001: Survey the site')
 
-    fireEvent.click(within(rowOf('Image the laptops')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Image the laptops'), 'Delete task')
     expect(screen.getByRole('alertdialog', { name: 'Delete task TASK-004?' })).toBeTruthy()
     deleteTaskMock.mockResolvedValue(rowC)
     searchMock.mockResolvedValue(response([rowA]))
@@ -69,7 +70,7 @@ describe('deleting from the All tasks page', () => {
     await screen.findByText('Survey the site')
     const before = counts()
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(screen.queryByRole('alertdialog')).toBeNull()
@@ -88,7 +89,7 @@ describe('deleting from the All tasks page', () => {
     expect(counts()).toContain('2 outstanding')
     expect(counts()).toContain('1 overdue')
 
-    fireEvent.click(within(rowOf('Order switches')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Order switches'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
 
     await waitFor(() => expect(screen.queryByText('Order switches')).toBeNull())
@@ -106,7 +107,7 @@ describe('deleting from the All tasks page', () => {
     deleteTaskMock.mockResolvedValue(rowB)
     renderPage('/tasks?q=switches')
     await screen.findByText('Order switches')
-    fireEvent.click(within(rowOf('Order switches')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Order switches'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
     expect(await screen.findByText('No tasks match your filters')).toBeTruthy()
     expect(screen.getByText(/was deleted/)).toBeTruthy()
@@ -119,7 +120,7 @@ describe('deleting from the All tasks page', () => {
     renderPage()
     await screen.findByText('Order switches')
 
-    fireEvent.click(within(rowOf('Order switches')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Order switches'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
     expect((await screen.findByRole('alert')).textContent).toContain('could not be reached')
     expect(screen.getByText('Order switches')).toBeTruthy()
@@ -139,7 +140,7 @@ describe('deleting from the All tasks page', () => {
     deleteTaskMock.mockReturnValue(new Promise((resolve) => (finish = resolve)))
     renderPage()
     await screen.findByText('Survey the site')
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     const confirm = screen.getByRole('button', { name: 'Delete task' })
     fireEvent.click(confirm)
     fireEvent.click(confirm)
@@ -162,7 +163,7 @@ describe('deleting from the All tasks page', () => {
     renderPage('/tasks?page=2')
     await screen.findByText('Survey the site')
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
 
     await waitFor(() => expect(screen.getByLabelText('address').textContent).toBe('/tasks'))

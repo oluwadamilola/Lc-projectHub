@@ -806,25 +806,78 @@
   margin-top: var(--space-3);
 }
 
-button.table-link {
-  padding: 0;
+/* The "⋮" actions button at the end of a task row, and its menu */
+.data-table .data-table__actions {
+  width: 1%;
+  text-align: right;
+}
+
+.row-menu__trigger {
+  width: 2rem;
+  height: 2rem;
+  /* The button overlaps the cell's padding, so it is never the tallest thing in the row and rows keep their height. */
+  margin-block: -0.5rem;
+  color: var(--text-muted);
+}
+
+.row-menu__trigger:hover,
+.row-menu__trigger[aria-expanded='true'] {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+@media (pointer: coarse) {
+  .row-menu__trigger {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-block: -0.75rem;
+  }
+}
+
+/* Drawn in the page body (not inside the scrolling table), so it is never clipped. */
+.row-menu {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  min-width: 10.5rem;
+  max-width: calc(100vw - 1rem);
+  padding: var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.row-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
   border: 0;
+  border-radius: var(--radius-sm);
   background: none;
+  color: var(--text);
   font: inherit;
   font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  text-decoration: underline;
 }
 
-.table-link--danger {
-  margin-left: var(--space-3);
-  color: var(--danger-text);
-  text-decoration-color: var(--danger-text);
+.row-menu__item:hover,
+.row-menu__item:focus-visible {
+  background: var(--surface-raised);
 }
 
-.table-link--danger:hover {
+.row-menu__item--danger {
   color: var(--danger-text);
-  text-decoration-thickness: 2px;
+}
+
+.row-menu__item--danger:hover,
+.row-menu__item--danger:focus-visible {
+  background: var(--danger-bg);
 }
 
 /* A confirmation inside a card, for example "Task TASK-007 was deleted." */

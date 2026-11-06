@@ -84,7 +84,8 @@ describe('AllTasksPage', () => {
     expect(cells.getByText('Critical')).toBeTruthy()
     expect(cells.getByText('Test Technician One')).toBeTruthy()
     expect(cells.getByText('1 Mar 2000')).toBeTruthy()
-    expect(cells.getByRole('link', { name: /Edit/ }).getAttribute('href')).toBe('/projects/PRJ-002/tasks/TASK-004/edit')
+    fireEvent.click(cells.getByRole('button', { name: 'Actions for task TASK-004: Image the laptops' }))
+    expect(screen.getByRole('menuitem', { name: 'Edit task' }).getAttribute('href')).toBe('/projects/PRJ-002/tasks/TASK-004/edit')
     expect(screen.getByText(/Showing 1–2 of 2 tasks/)).toBeTruthy()
   })
 
