@@ -27,6 +27,12 @@ export const navItems: NavItem[] = [
     description: 'Track tasks, owners and deadlines.',
   },
   {
+    label: 'Audit',
+    path: '/audit',
+    icon: 'audit',
+    description: 'Inspect rooms and track the condition of their equipment.',
+  },
+  {
     label: 'Locations',
     path: '/locations',
     icon: 'locations',

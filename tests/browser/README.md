@@ -2,7 +2,7 @@
 
 Drives the **built** LC ProjectHub app in a real browser (Playwright) and checks what a person would see and do:
 dashboard figures, projects, tasks (per project and across all projects), create and edit forms, the mobile menu, error and empty states, accessibility
-basics and the light-only design. It currently contains **nine suites and 537 checks**.
+basics and the light-only design. It currently contains **eleven suites and 721 checks**.
 
 It is deliberately **isolated**. It never talks to the development server on port 4000, and it fails closed (refuses to
 run) if it cannot prove that.
@@ -49,7 +49,7 @@ From the **repository root**:
 ```
 npm --prefix tests/browser install     # once
 npm run build                          # whenever the app code changed
-npm run test:browser                   # all nine suites
+npm run test:browser                   # all ten suites
 ```
 
 Or from `tests/browser`:
@@ -74,6 +74,8 @@ Optional: `SHOTS=screenshots npm test` saves screenshots into `tests/browser/scr
 | `dash` | 28 | "Tasks due this week" against an independent calculation; the five dashboard cards; loading, zero and failure states |
 | `overdue` | 29 | "Overdue tasks" (yesterday, today, tomorrow, Done); shared task requests; failure and retry; layout |
 | `alltasks` | 113 | the All tasks page: navigation, columns, every filter and search (against an independent calculation), URL state, paging, loading / empty / error / retry, overdue boundaries, agreement with the dashboard, phone layout |
+| `audit-api` | 89 | the Audit module's read-only API (stage 1R-a), over real HTTP against the built server: cycles (one open), progress per cycle, block and floor against an independent count, room lists by inspection state, equipment items and identifiers, checklist rules in the recorded inspections, previous answers, errors and the read-only contract, fictional-data guards. The Audit pages and their browser suite arrive in stage 1R-b |
+| `audit` | 95 | the Audit pages (stage 1R-b), in a real browser against the seeded stack: sidebar entry, overview of the open cycle (Summer 2027, zero progress) and of closed cycles, switching cycle, block and floor navigation, room lists filtered by inspection state, the room checklist with this cycle's answers beside last time's (corrections, firmware wording, equipment needing review, rooms with no equipment, rooms that could not be inspected, retired rooms), failures and unknown addresses, read-only behaviour, small screens and accessibility. Every figure is checked against a count built independently from each room's own record |
 | `rowmenu` | 87 | the "⋮" actions menu on every task row (project page and All tasks): open, close, outside click, Escape, keyboard, one open at a time, not clipped (last row, short window, phone), touch sizes, colours and focus rings, row heights unchanged, light theme |
 | `deletion` | 85 | deleting a task (project page and All tasks) and a project with all its tasks: confirmation, cancel, success message, failure and retry, double submission, already-deleted, no orphaned tasks, dashboard / All tasks counts, references never reused, light theme and small screens |
 | `tasks` | 62 | task list, filters, paging; create and edit tasks; not-found states; phone layout; existing project features |

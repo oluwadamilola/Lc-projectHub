@@ -70,7 +70,8 @@ export interface ProjectDeleteResponse {
   meta: { deletedTasks: number }
 }
 
-export type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'INTERNAL_ERROR'
+/** CONFLICT (409): the request is valid but clashes with the current state, for example a second open cycle. */
+export type ApiErrorCode = 'VALIDATION_ERROR' | 'NOT_FOUND' | 'CONFLICT' | 'INTERNAL_ERROR'
 
 export interface ApiErrorDetail {
   field: string

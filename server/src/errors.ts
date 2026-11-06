@@ -26,3 +26,10 @@ export class NotFoundError extends AppError {
     super(404, 'NOT_FOUND', message)
   }
 }
+
+/** The request is understood but clashes with the current state (a second open cycle, a duplicate asset tag...). */
+export class ConflictError extends AppError {
+  constructor(message: string) {
+    super(409, 'CONFLICT', message)
+  }
+}
