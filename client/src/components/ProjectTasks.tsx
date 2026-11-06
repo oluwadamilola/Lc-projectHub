@@ -8,6 +8,7 @@ import { DeleteTaskDialog } from './DeleteTaskDialog'
 import { Pagination } from './Pagination'
 import { EmptyState, ErrorState, LoadingState } from './StateMessage'
 import { PriorityBadge, TaskStatusBadge } from './StatusBadge'
+import { TaskActionsMenu } from './TaskActionsMenu'
 
 const PAGE_SIZE = 10
 const SEARCH_DEBOUNCE_MS = 300
@@ -214,7 +215,7 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
                       <th scope="col">Priority</th>
                       <th scope="col">Technician</th>
                       <th scope="col">Due</th>
-                      <th scope="col">
+                      <th scope="col" className="data-table__actions">
                         <span className="visually-hidden">Actions</span>
                       </th>
                     </tr>
@@ -239,19 +240,8 @@ export function ProjectTasks({ projectId }: { projectId: string }) {
                             <span className="badge badge--danger badge--inline">Overdue</span>
                           )}
                         </td>
-                        <td className="nowrap">
-                          <Link className="table-link" to={`/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(task.id)}/edit`}>
-                            Edit{' '}
-                            <span className="visually-hidden">
-                              task {task.id}: {task.title}
-                            </span>
-                          </Link>
-                          <button type="button" className="table-link table-link--danger" onClick={() => setDeleting(task)}>
-                            Delete{' '}
-                            <span className="visually-hidden">
-                              task {task.id}: {task.title}
-                            </span>
-                          </button>
+                        <td className="data-table__actions">
+                          <TaskActionsMenu task={task} onDelete={() => setDeleting(task)} />
                         </td>
                       </tr>
                     ))}

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiRequestError } from '../api/http'
 import { deleteTask, getTasks, getTechnicians } from '../api/tasks'
 import { taskA, taskB, taskListResponse, technicians } from '../test/fixtures'
+import { actionsButton, chooseRowAction } from '../test/taskMenu'
 import { DeleteTaskDialog } from './DeleteTaskDialog'
 import { ProjectTasks } from './ProjectTasks'
 
@@ -123,12 +124,15 @@ describe('deleting from the project\'s task list', () => {
   }
   const rowOf = (title: string) => screen.getByText(title).closest('tr') as HTMLElement
 
-  it('offers a Delete action on every row that names its task', async () => {
+  it('offers a Delete action, in the actions menu of each row, that names its task', async () => {
     getTasksMock.mockResolvedValue(taskListResponse([taskA, taskB]))
     renderTasks()
     await screen.findByText('Survey the site')
-    expect(within(rowOf('Survey the site')).getByRole('button', { name: 'Delete task TASK-001: Survey the site' })).toBeTruthy()
-    expect(within(rowOf('Order switches')).getByRole('button', { name: 'Delete task TASK-002: Order switches' })).toBeTruthy()
+    expect(actionsButton(rowOf('Survey the site')).getAttribute('aria-label')).toBe('Actions for task TASK-001: Survey the site')
+    expect(actionsButton(rowOf('Order switches')).getAttribute('aria-label')).toBe('Actions for task TASK-002: Order switches')
+    fireEvent.click(actionsButton(rowOf('Order switches')))
+    expect(screen.getByRole('menuitem', { name: 'Delete task' })).toBeTruthy()
+    expect(screen.queryByRole('alertdialog')).toBeNull() // opening the menu deletes nothing and asks nothing yet
   })
 
   it('opens a confirmation, and cancelling leaves the list and the data alone', async () => {
@@ -136,7 +140,7 @@ describe('deleting from the project\'s task list', () => {
     renderTasks()
     await screen.findByText('Survey the site')
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     expect(screen.getByRole('alertdialog', { name: 'Delete task TASK-001?' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
@@ -154,7 +158,7 @@ describe('deleting from the project\'s task list', () => {
     renderTasks()
     await screen.findByText('Survey the site')
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
 
     await waitFor(() => expect(screen.queryByText('Survey the site')).toBeNull())
@@ -175,7 +179,7 @@ describe('deleting from the project\'s task list', () => {
     renderTasks()
     await screen.findByText('Survey the site')
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
     expect((await screen.findByRole('alert')).textContent).toContain('currently unavailable')
     expect(screen.getByText('Survey the site')).toBeTruthy()
@@ -195,7 +199,7 @@ describe('deleting from the project\'s task list', () => {
     renderTasks()
     await screen.findByText('Survey the site')
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
 
     await waitFor(() => expect(screen.queryByText('Survey the site')).toBeNull())
@@ -220,7 +224,7 @@ describe('deleting from the project\'s task list', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Next' }))
     await screen.findByText('Survey the site') // page 2 holds just this one task
 
-    fireEvent.click(within(rowOf('Survey the site')).getByRole('button', { name: /Delete/ }))
+    chooseRowAction(rowOf('Survey the site'), 'Delete task')
     fireEvent.click(screen.getByRole('button', { name: 'Delete task' }))
 
     await waitFor(() => expect(getTasksMock.mock.calls.at(-1)?.[1]).toMatchObject({ page: 1 }))

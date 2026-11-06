@@ -25,6 +25,7 @@ import { DeleteTaskDialog } from '../components/DeleteTaskDialog'
 import { Pagination } from '../components/Pagination'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateMessage'
 import { PriorityBadge, TaskStatusBadge } from '../components/StatusBadge'
+import { TaskActionsMenu } from '../components/TaskActionsMenu'
 import { useApiResource } from '../hooks/useApiResource'
 import { formatDate } from '../lib/format'
 
@@ -319,7 +320,7 @@ export function AllTasksPage() {
                         <th scope="col">Priority</th>
                         <th scope="col">Technician</th>
                         <th scope="col">Due</th>
-                        <th scope="col">
+                        <th scope="col" className="data-table__actions">
                           <span className="visually-hidden">Actions</span>
                         </th>
                       </tr>
@@ -348,22 +349,8 @@ export function AllTasksPage() {
                             {formatDate(task.dueDate)}
                             {isTaskOverdue(task, loaded.today) && <span className="badge badge--danger badge--inline">Overdue</span>}
                           </td>
-                          <td className="nowrap">
-                            <Link
-                              className="table-link"
-                              to={`/projects/${encodeURIComponent(task.projectId)}/tasks/${encodeURIComponent(task.id)}/edit`}
-                            >
-                              Edit{' '}
-                              <span className="visually-hidden">
-                                task {task.id}: {task.title}
-                              </span>
-                            </Link>
-                            <button type="button" className="table-link table-link--danger" onClick={() => setDeleting(task)}>
-                              Delete{' '}
-                              <span className="visually-hidden">
-                                task {task.id}: {task.title}
-                              </span>
-                            </button>
+                          <td className="data-table__actions">
+                            <TaskActionsMenu task={task} onDelete={() => setDeleting(task)} />
                           </td>
                         </tr>
                       ))}

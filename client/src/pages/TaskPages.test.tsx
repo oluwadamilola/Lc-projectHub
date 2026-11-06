@@ -61,7 +61,8 @@ describe('tasks on the project page', () => {
 
   it('opens the edit form from a task row', async () => {
     const router = renderApp('/projects/PRJ-001')
-    fireEvent.click(await screen.findByRole('link', { name: 'Edit task TASK-001: Survey the site' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Actions for task TASK-001: Survey the site' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit task' }))
     expect(await screen.findByRole('heading', { name: 'Edit task', level: 1 })).toBeTruthy()
     expect(router.state.location.pathname).toBe('/projects/PRJ-001/tasks/TASK-001/edit')
   })

@@ -57,7 +57,9 @@ const rows = (page) => page.locator('table tbody tr')
 const dialog = (page) => page.getByRole('alertdialog')
 const projectPage = async (page, id) => { await page.goto(`${BASE}/projects/${id}`); await page.waitForSelector('#tasks table, #tasks .state') }
 const taskRow = (page, title) => page.locator('table tbody tr', { hasText: title })
-const deleteButtonFor = (page, task) => page.getByRole('button', { name: new RegExp(`Delete task ${task.id}:`) })
+const actionsFor = (page, task) => page.getByRole('button', { name: new RegExp(`^Actions for task ${task.id}:`) })
+// Delete lives in each row's "⋮" menu: open it, then choose Delete task. The confirmation dialog comes next, as before.
+const chooseDelete = async (page, task) => { await actionsFor(page, task).click(); await page.getByRole('menuitem', { name: 'Delete task' }).click() }
 const urlNow = (page) => { const u = new URL(page.url()); return u.pathname + u.search }
 const dashSettled = async (page) => {
   await page.goto(BASE + '/'); await page.waitForSelector('table')
@@ -82,10 +84,10 @@ try {
   const [overdue, today, done] = tasks
   const { ctx, page, requests } = await open()
   await projectPage(page, project.id)
-  check('A1 every task row has a Delete button that names its task', (await page.getByRole('button', { name: /^Delete task TASK-\d+:/ }).count()) === 3)
+  check('A1 every task row has one actions button that names its task, and its menu offers Delete task', (await page.getByRole('button', { name: /^Actions for task TASK-\d+:/ }).count()) === 3 && (await page.getByRole('button', { name: /^Delete task/ }).count()) === 0)
 
-  await deleteButtonFor(page, overdue).focus()
-  await deleteButtonFor(page, overdue).click()
+  await actionsFor(page, overdue).focus()
+  await chooseDelete(page, overdue)
   const d = dialog(page)
   await d.waitFor()
   const dText = await d.innerText()
@@ -93,13 +95,13 @@ try {
   check('A3 nothing has been deleted yet (no DELETE request) and focus starts on Cancel', deletes(requests).length === 0 && (await page.evaluate(() => document.activeElement.textContent)) === 'Cancel')
   await d.getByRole('button', { name: 'Cancel' }).click()
   check('A4 Cancel closes it and leaves the task, the list and the server untouched', (await dialog(page).count()) === 0 && (await rows(page).count()) === 3 && deletes(requests).length === 0 && (await raw(`/api/projects/${project.id}/tasks/${overdue.id}`)).status === 200)
-  check('A5 and focus goes back to the Delete button that was used', await page.evaluate((id) => document.activeElement?.getAttribute('aria-label') ?? document.activeElement?.textContent.includes(id), overdue.id))
+  check("A5 and focus goes back to that row's actions button", await page.evaluate((id) => (document.activeElement?.getAttribute('aria-label') ?? '').startsWith(`Actions for task ${id}:`), overdue.id))
 
-  await deleteButtonFor(page, today).click(); await dialog(page).waitFor()
+  await chooseDelete(page, today); await dialog(page).waitFor()
   await page.keyboard.press('Escape')
   check('A6 Escape also cancels', (await dialog(page).count()) === 0 && deletes(requests).length === 0 && (await rows(page).count()) === 3)
 
-  await deleteButtonFor(page, overdue).click(); await dialog(page).waitFor()
+  await chooseDelete(page, overdue); await dialog(page).waitFor()
   await dialog(page).getByRole('button', { name: 'Delete task' }).click()
   await page.getByText(/was deleted/).waitFor()
   check('A7 confirming sends exactly one DELETE for that task', deletes(requests).length === 1 && deletes(requests)[0] === `DELETE /api/projects/${project.id}/tasks/${overdue.id}`, deletes(requests).join(' '))
@@ -129,7 +131,7 @@ try {
     ? route.fulfill({ status: 500, contentType: 'application/json', body: errorBody('Something went wrong on the server.') })
     : route.fallback()))
   await projectPage(page, project.id)
-  await deleteButtonFor(page, first).click(); await dialog(page).waitFor()
+  await chooseDelete(page, first); await dialog(page).waitFor()
   await dialog(page).getByRole('button', { name: 'Delete task' }).click()
   await dialog(page).getByRole('alert').waitFor()
   check('B1 a server error is shown inside the dialog', (await dialog(page).getByRole('alert').innerText()).includes('Something went wrong on the server.'))
@@ -140,7 +142,7 @@ try {
   check('B4 retrying works: the task is deleted and reported (only the retry reached the server; the first answer was injected)', (await taskRow(page, first.title).count()) === 0 && (await raw(`/api/projects/${project.id}/tasks/${first.id}`)).status === 404 && deletes(requests).length === 1, `${deletes(requests).length} DELETE requests reached the server`)
 
   await page.route('**/api/projects/*/tasks/*', (route) => (route.request().method() === 'DELETE' ? route.abort() : route.fallback()))
-  await deleteButtonFor(page, second).click(); await dialog(page).waitFor()
+  await chooseDelete(page, second); await dialog(page).waitFor()
   await dialog(page).getByRole('button', { name: 'Delete task' }).click()
   await dialog(page).getByRole('alert').waitFor()
   check('B5 an unreachable server gives a plain-language message and deletes nothing', (await dialog(page).getByRole('alert').innerText()).includes('could not be reached') && (await raw(`/api/projects/${project.id}/tasks/${second.id}`)).status === 200 && (await taskRow(page, second.title).count()) === 1)
@@ -158,7 +160,7 @@ try {
   const gate = new Promise((r) => (release = r))
   await page.route('**/api/projects/*/tasks/*', async (route) => { if (route.request().method() === 'DELETE') await gate; await route.fallback() })
   await projectPage(page, project.id)
-  await deleteButtonFor(page, only).click(); await dialog(page).waitFor()
+  await chooseDelete(page, only); await dialog(page).waitFor()
   const confirm = dialog(page).getByRole('button', { name: 'Delete task' })
   await confirm.dblclick()
   await page.keyboard.press('Enter')
@@ -181,7 +183,7 @@ try {
   const [gone, bystander] = tasks
   const { ctx, page } = await open()
   await projectPage(page, project.id)
-  await deleteButtonFor(page, gone).click(); await dialog(page).waitFor()
+  await chooseDelete(page, gone); await dialog(page).waitFor()
   await del(`/api/projects/${project.id}/tasks/${gone.id}`) // someone else deletes it first
   await dialog(page).getByRole('button', { name: 'Delete task' }).click()
   await dialog(page).getByRole('alert').waitFor()
@@ -217,11 +219,11 @@ try {
   await page.goto(`${BASE}/tasks?q=Fprobe`); await page.waitForSelector('.results[aria-busy="false"]')
   check('F1 the search finds all 11 probe tasks over two pages', /of 11 tasks/.test(await page.locator('.results-summary').innerText()) && (await rows(page).count()) === 10)
   const target = many.tasks[0]
-  await page.getByRole('button', { name: new RegExp(`Delete task ${target.id}:`) }).click(); await dialog(page).waitFor()
+  await chooseDelete(page, target); await dialog(page).waitFor()
   check('F2 the confirmation appears here too, naming the task', (await dialog(page).getByRole('heading').innerText()) === `Delete task ${target.id}?`)
   await dialog(page).getByRole('button', { name: 'Cancel' }).click()
   check('F3 cancelling changes nothing', deletes(requests).length === 0 && /of 11 tasks/.test(await page.locator('.results-summary').innerText()))
-  await page.getByRole('button', { name: new RegExp(`Delete task ${target.id}:`) }).click(); await dialog(page).waitFor()
+  await chooseDelete(page, target); await dialog(page).waitFor()
   await dialog(page).getByRole('button', { name: 'Delete task' }).click()
   await page.getByText(/was deleted/).waitFor()
   await page.waitForFunction(() => /of 10 tasks/.test(document.querySelector('.results-summary')?.textContent ?? ''))
@@ -238,7 +240,7 @@ try {
   await p2.page.goto(`${BASE}/tasks?q=Gprobe&page=2`); await p2.page.waitForSelector('.results[aria-busy="false"]')
   const lastTask = more.tasks[10]
   check('F7 page 2 holds exactly one task (the last)', (await rows(p2.page).count()) === 1 && (await taskRow(p2.page, lastTask.title).count()) === 1)
-  await p2.page.getByRole('button', { name: new RegExp(`Delete task ${lastTask.id}:`) }).click(); await dialog(p2.page).waitFor()
+  await chooseDelete(p2.page, lastTask); await dialog(p2.page).waitFor()
   await dialog(p2.page).getByRole('button', { name: 'Delete task' }).click()
   await p2.page.getByText(/was deleted/).waitFor()
   await p2.page.waitForFunction(() => document.querySelectorAll('table tbody tr').length === 10)
@@ -397,14 +399,14 @@ try {
     await c.page.getByRole('button', { name: 'Delete project' }).click(); await dialog(c.page).waitFor()
     check(`J5 [${name}] no horizontal overflow with the project dialog open; both buttons fit on screen`, await c.page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth && [...document.querySelectorAll('.confirm-dialog .btn')].every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= window.innerWidth })))
     await c.page.getByRole('button', { name: 'Cancel' }).click()
-    await c.page.getByRole('button', { name: new RegExp(`Delete task ${tasks[0].id}:`) }).click(); await dialog(c.page).waitFor()
+    await chooseDelete(c.page, tasks[0]); await dialog(c.page).waitFor()
     check(`J6 [${name}] the task dialog fits too`, await c.page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))
     if (SHOTS) await c.page.screenshot({ path: `${SHOTS}/deletion-dialog-${name}.png`, fullPage: true })
     await c.ctx.close()
   }
   const k = await open()
   await projectPage(k.page, project.id)
-  await k.page.getByRole('button', { name: new RegExp(`Delete task ${tasks[0].id}:`) }).click()
+  await chooseDelete(k.page, tasks[0])
   check('J7 the dialog is announced as an alert dialog with a name and a description', await k.page.evaluate(() => { const d = document.querySelector('[role=alertdialog]'); return !!d && !!document.getElementById(d.getAttribute('aria-labelledby')) && !!document.getElementById(d.getAttribute('aria-describedby')) }))
   await k.ctx.close()
 } catch (e) { check('SECTION J aborted', false, String(e.message).slice(0, 300)) }
