@@ -144,7 +144,9 @@ async function restartServer() {
   }
   server = startNode('The test server', path.join(REPO_ROOT, 'server', 'dist', 'index.js'), [], {
     cwd: REPO_ROOT,
-    env: { ...process.env, PORT: String(API_PORT) },
+    // The audit clock starts inside the open cycle's window (Summer 2027), so inspections can be recorded whatever
+    // the real date is. It affects only this isolated test server, never the development server.
+    env: { ...process.env, PORT: String(API_PORT), AUDIT_CLOCK_NOW: '2027-07-12T09:00:00.000Z' },
   })
   await waitUntil(testApiAnswers, 'the test server to answer', server)
 }

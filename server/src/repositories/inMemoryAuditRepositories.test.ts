@@ -226,3 +226,96 @@ describe('InMemoryInspectionRepository', () => {
     expect(await copy.listByCycle('CYC-001')).toEqual(fixtureInspections.filter((i) => i.cycleId === 'CYC-001'))
   })
 })
+
+describe('InMemoryEquipmentItemRepository writes', () => {
+  const input = { roomId: 'ROOM-002', equipmentTypeId: 'other', name: 'Camera', assetTag: null, serialNumber: null, status: 'Active' as const, source: 'Found during inspection' as const, reviewStatus: 'Needs review' as const, addedInInspectionId: 'INS-009', replacesItemId: null }
+
+  it('assigns the next reference after the highest in use, and finds the new item', async () => {
+    const repo = new InMemoryEquipmentItemRepository(fixtureItems)
+    const created = await repo.create(input)
+    expect(created.id).toBe('EQP-009')
+    expect(await repo.findById('EQP-009')).toEqual(created)
+    expect((await repo.create(input)).id).toBe('EQP-010')
+    expect((await repo.listAll()).map((item) => item.id).slice(-2)).toEqual(['EQP-009', 'EQP-010'])
+  })
+
+  it('starts at EQP-001 in an empty inventory', async () => {
+    expect((await new InMemoryEquipmentItemRepository([]).create(input)).id).toBe('EQP-001')
+  })
+
+  it('copies on the way in and out', async () => {
+    const repo = new InMemoryEquipmentItemRepository([])
+    const source = { ...input }
+    const created = await repo.create(source)
+    source.name = 'CHANGED'
+    created.name = 'CHANGED TOO'
+    expect((await repo.findById(created.id))!.name).toBe('Camera')
+  })
+
+  it('removes an item (to undo a create), and says so when there was none', async () => {
+    const repo = new InMemoryEquipmentItemRepository(fixtureItems)
+    const created = await repo.create(input)
+    expect(await repo.remove(created.id)).toBe(true)
+    expect(await repo.findById(created.id)).toBeNull()
+    expect(await repo.remove(created.id)).toBe(false)
+    expect((await repo.create(input)).id).toBe(created.id)
+  })
+})
+
+describe('InMemoryInspectionRepository writes', () => {
+  const fresh = (roomId: string, cycleId = 'CYC-002') => ({
+    cycleId, roomId, status: 'In progress' as const, inspectorId: 'TECH-001', startedAt: '2026-08-01T09:00:00.000Z', completedAt: null,
+    note: '', noEquipmentConfirmed: false, attempts: [], results: [],
+  })
+
+  it('assigns the next reference and stores the inspection', async () => {
+    const repo = new InMemoryInspectionRepository(fixtureInspections)
+    const created = await repo.create(fresh('ROOM-006'))
+    expect(created.id).toBe('INS-008')
+    expect(await repo.findById('INS-008')).toEqual(created)
+    expect((await repo.listByCycle('CYC-002')).map((i) => i.id)).toContain('INS-008')
+    expect((await repo.listByRoom('ROOM-006')).map((i) => i.id)).toEqual(['INS-008'])
+  })
+
+  it('refuses a second inspection of the same room in the same cycle, but allows another cycle', async () => {
+    const repo = new InMemoryInspectionRepository(fixtureInspections)
+    await expect(repo.create(fresh('ROOM-001'))).rejects.toThrow(/already has an inspection/)
+    expect((await repo.listByCycle('CYC-002')).length).toBe(3)
+    await expect(repo.create(fresh('ROOM-006', 'CYC-001'))).resolves.toMatchObject({ roomId: 'ROOM-006', cycleId: 'CYC-001' })
+  })
+
+  it('replaces a whole record, lines included, and returns the stored copy', async () => {
+    const repo = new InMemoryInspectionRepository(fixtureInspections)
+    const record = (await repo.findById('INS-006'))!
+    record.results[1].condition = 'Working'
+    record.results[1].checks[0].condition = 'Working'
+    record.status = 'Completed'
+    record.completedAt = '2026-07-02T10:00:00.000Z'
+    const saved = (await repo.save(record))!
+    expect(saved.status).toBe('Completed')
+    const reread = (await repo.findById('INS-006'))!
+    expect(reread.results.map((r) => r.condition)).toEqual(['Working', 'Working', 'Not working'])
+    expect(reread.results[1].checks[0].condition).toBe('Working')
+    expect((await repo.listByCycle('CYC-002')).length).toBe(3)
+  })
+
+  it('returns null for an unknown reference and changes nothing', async () => {
+    const repo = new InMemoryInspectionRepository(fixtureInspections)
+    const record = { ...(await repo.findById('INS-006'))!, id: 'INS-999' }
+    expect(await repo.save(record)).toBeNull()
+    expect(await repo.findById('INS-999')).toBeNull()
+  })
+
+  it('keeps nothing shared with the caller after create or save', async () => {
+    const repo = new InMemoryInspectionRepository([])
+    const source = { ...fresh('ROOM-001'), attempts: [] as { at: string; byId: string; reason: string }[] }
+    const created = await repo.create(source)
+    source.attempts.push({ at: 'x', byId: 'y', reason: 'z' })
+    created.note = 'CHANGED'
+    const saved = (await repo.save({ ...created, note: 'kept' }))!
+    saved.note = 'CHANGED AGAIN'
+    const stored = (await repo.findById(created.id))!
+    expect(stored.attempts).toEqual([])
+    expect(stored.note).toBe('kept')
+  })
+})

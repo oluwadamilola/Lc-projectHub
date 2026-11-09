@@ -1,6 +1,6 @@
 import type { Block, EquipmentItem, EquipmentType, Floor, InspectionResult, Room } from '@lc-projecthub/shared'
 import { NOT_CHECKED } from '@lc-projecthub/shared'
-import type { InspectionCycleRecord, InspectionRecord } from '../domain/auditRepository.js'
+import type { InspectionCycleRecord, InspectionRecord, InspectionRepository } from '../domain/auditRepository.js'
 import {
   InMemoryBlockRepository,
   InMemoryCycleRepository,
@@ -12,6 +12,7 @@ import {
 } from '../repositories/inMemoryAuditRepositories.js'
 import { InMemoryTechnicianRepository } from '../repositories/inMemoryTechnicianRepository.js'
 import { AuditService } from '../services/auditService.js'
+import { InspectionService } from '../services/inspectionService.js'
 import { fixtureTechnicians } from './taskFixtures.js'
 
 /*
@@ -205,4 +206,30 @@ export function buildFixtureAuditService(
     new InMemoryInspectionRepository(overrides.inspections ?? fixtureInspections),
     new InMemoryTechnicianRepository(overrides.technicians ?? fixtureTechnicians),
   )
+}
+
+/**
+ * The read and write services over ONE set of fixture repositories, with a clock that starts at a fixed moment
+ * and moves on one minute with every reading, so timestamps are predictable and always increase. The repositories
+ * are returned too, for tests that look behind the API or swap one for a failing stand-in.
+ */
+export function buildFixtureAudit(
+  overrides: { cycles?: InspectionCycleRecord[]; inspections?: InspectionRecord[]; items?: EquipmentItem[]; wrapInspections?: (repository: InMemoryInspectionRepository) => InspectionRepository; clock?: () => Date } = {},
+) {
+  const blocks = new InMemoryBlockRepository(fixtureBlocks)
+  const floors = new InMemoryFloorRepository(fixtureFloors)
+  const rooms = new InMemoryRoomRepository(fixtureRooms, fixtureFloors)
+  const types = new InMemoryEquipmentTypeRepository(fixtureEquipmentTypes)
+  const items = new InMemoryEquipmentItemRepository(overrides.items ?? fixtureItems)
+  const cycles = new InMemoryCycleRepository(overrides.cycles ?? fixtureCycles)
+  const inMemoryInspections = new InMemoryInspectionRepository(overrides.inspections ?? fixtureInspections)
+  const inspectionsRepository = overrides.wrapInspections ? overrides.wrapInspections(inMemoryInspections) : inMemoryInspections
+  const technicians = new InMemoryTechnicianRepository(fixtureTechnicians)
+  let minute = 0
+  const clock = overrides.clock ?? (() => new Date(Date.UTC(2026, 7, 3, 10, minute++, 0)))
+  return {
+    audit: new AuditService(blocks, floors, rooms, types, items, cycles, inspectionsRepository, technicians),
+    inspections: new InspectionService(blocks, floors, rooms, types, items, cycles, inspectionsRepository, technicians, clock),
+    repositories: { items, cycles, inspections: inspectionsRepository, rooms },
+  }
 }

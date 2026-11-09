@@ -1,9 +1,10 @@
 import { API, assertIsolated } from '../lib/guard.mjs'
 
 /*
-  Audit module, stage 1R-a: the read-only API, exercised over real HTTP on the isolated test stack against the
-  BUILT server. There is no page to look at yet (the client comes in 1R-b), so this suite crawls the API and
-  recomputes every figure independently from the per-room data, never from the aggregated figures it checks.
+  Audit module API (stage 1R-a read side, stage 2a write side), exercised over real HTTP on the isolated test stack
+  against the BUILT server. Sections A to J crawl the read API and recompute every figure independently from the
+  per-room data, never from the aggregated figures they check. Section K, last, then carries out real inspections
+  through the write endpoints. It runs last because it changes the (in-memory, per-suite) seed data.
 */
 
 let pass = 0, fail = 0
@@ -171,8 +172,8 @@ check('H3 invalid parameters are 400 and every problem is listed', bad.status ==
 check('H4 malformed references are 400', (await status('/api/audit/rooms/bad%20id')) === 400 && (await status('/api/audit/cycles/bad%20id')) === 400)
 check('H5 pageSize above 100 and page 0 are rejected', (await status('/api/audit/rooms?pageSize=101')) === 400 && (await status('/api/audit/rooms?page=0')) === 400)
 check('H6 an inspection state that is really an equipment condition is rejected', (await status('/api/audit/rooms?inspection=Working')) === 400 && (await status('/api/audit/rooms?inspection=Completed')) === 400)
-check('H7 the audit API is read-only: POST, PUT, PATCH and DELETE are 404 everywhere', (await Promise.all(['POST', 'PUT', 'PATCH', 'DELETE'].flatMap((m) => ['/api/audit/cycles', '/api/audit/blocks', '/api/audit/rooms', '/api/audit/rooms/ROOM-001', '/api/audit/equipment-types'].map(async (p) => (await raw(p, { method: m })).status)))).every((s) => s === 404))
-check('H8 there are no write endpoints for inspections yet', (await status('/api/audit/inspections')) === 404 && (await status('/api/audit/inspections', { method: 'POST' })) === 404)
+check('H7 the inventory and progress endpoints are read-only: POST, PUT, PATCH and DELETE are 404 on every one of them', (await Promise.all(['POST', 'PUT', 'PATCH', 'DELETE'].flatMap((m) => ['/api/audit/cycles', '/api/audit/blocks', '/api/audit/rooms', '/api/audit/rooms/ROOM-001', '/api/audit/equipment-types'].map(async (p) => (await raw(p, { method: m })).status)))).every((s) => s === 404))
+check('H8 inspections cannot be listed, deleted or patched: there is no such endpoint (they are only started, filled in and completed)', (await status('/api/audit/inspections')) === 404 && (await status('/api/audit/inspections', { method: 'POST' })) === 404 && (await status('/api/audit/inspections/INS-001', { method: 'DELETE' })) === 404 && (await status('/api/audit/inspections/INS-001', { method: 'PATCH' })) === 404)
 check('H9 the project, task and technician endpoints are untouched', (await status('/api/health')) === 200 && (await status('/api/projects')) === 200 && (await status('/api/tasks')) === 200 && (await status('/api/technicians')) === 200)
 
 console.log('\n== I. The data is fictional ==')
@@ -189,5 +190,118 @@ check('J3 not one item in any room has an answer in the open cycle (the checklis
 check('J4 every item still shows last time\'s answer, so the next inspection starts with context', lines.filter(({ line }) => line.previous).length > 200)
 check('J5 nothing in the open cycle\'s rooms or equipment is dated 2027 (activity dates would be future-dated)', !JSON.stringify([openRooms, [...details.values()]]).includes('2027'))
 check('J6 the two closed cycles stay closed, with a closing time, and the open one has none', byName('Summer 2025').status === 'Closed' && byName('Summer 2026').status === 'Closed' && byName('Summer 2025').closedAt && byName('Summer 2026').closedAt && open.closedAt === null)
+
+console.log('\n== K. Carrying out inspections (the write API) ==')
+const send = async (method, path, body) => {
+  const r = await raw(`/api/audit${path}`, { method, headers: body === undefined ? undefined : { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) })
+  return { status: r.status, location: r.headers.get('location'), body: await r.json() }
+}
+const technicians = (await get('/api/technicians')).body.data
+const TECH = technicians[0], TECH2 = technicians[1]
+const roomByCode = (code) => openRooms.find((r) => r.code === code)
+const stateOf = async (cycleId = open.id) => (await get(`/api/audit/cycles/${cycleId}`)).body.data.progress
+const before = await stateOf()
+
+// A room with equipment (B101 has a Clevertouch panel), taken from its own record rather than assumed.
+const b101 = roomByCode('B101')
+const b101Lines = (await get(`/api/audit/rooms/${b101.id}`)).body.data.equipment
+const started = await send('POST', `/rooms/${b101.id}/inspection`, { inspectorId: TECH.id })
+check('K1 starting an inspection of B101 in the open cycle is 201, with a Location, in progress, with the chosen technician', started.status === 201 && started.location === `/api/audit/inspections/${started.body.data.id}` && started.body.data.status === 'In progress' && started.body.data.inspectorName === TECH.name && started.body.data.cycle.id === open.id, JSON.stringify(started.body.data).slice(0, 120))
+const insId = started.body.data.id
+check('K2 the checklist is exactly the room\'s own active equipment, each line Not checked, with identifiers where it has them', same(started.body.data.lines.map((l) => l.id), b101Lines.map((l) => l.id)) && started.body.data.lines.every((l) => l.current.condition === 'Not checked') && started.body.data.progress.total === b101Lines.length && started.body.data.progress.checked === 0)
+check('K3 every line shows last time\'s answer (the room was inspected in earlier cycles)', started.body.data.lines.filter((l) => l.previous).length === b101Lines.filter((l) => l.previous).length && started.body.data.lines.some((l) => l.previous))
+const again = await send('POST', `/rooms/${b101.id}/inspection`, { inspectorId: TECH2.id })
+check('K4 starting again is idempotent: 200, the same inspection, the first inspector kept, no duplicate', again.status === 200 && again.body.data.id === insId && again.body.data.inspectorId === TECH.id)
+const afterStart = await stateOf()
+check('K5 the cycle progress moved by exactly one room: in progress +1, not started -1', afterStart.inProgress === before.inProgress + 1 && afterStart.notStarted === before.notStarted - 1 && afterStart.completed === before.completed)
+check('K6 the room list and room page now show it in progress, with 0 of N items checked', (await get(`/api/audit/rooms/${b101.id}`)).body.data.inspection.status === 'In progress' && (await get(`/api/audit/rooms/${b101.id}`)).body.data.inspection.totalLines === b101Lines.length)
+
+const early = await send('POST', `/inspections/${insId}/complete`)
+check('K7 completing too early is 400 and names every item still to check', early.status === 400 && same(early.body.error.details.map((d) => d.field), b101Lines.map((l) => `results.${l.id}`)), JSON.stringify(early.body.error.details?.map((d) => d.field)))
+const answerOf = (line, over = {}) => ({ condition: 'Working', note: '', checks: line.checks.map((c) => ({ checkId: c.id, condition: 'Working', note: '' })), ...over })
+const target = b101Lines[0]
+const missingNote = await send('PUT', `/inspections/${insId}/results/${target.id}`, answerOf(target, { condition: 'Not working', note: '' }))
+check('K8 a Not working answer without a note can be saved as a draft (200) but completion then lists the missing note', missingNote.status === 200 && missingNote.body.data.completion.problems.some((p) => p.field === `results.${target.id}` && /note/.test(p.message)))
+let last
+for (const line of b101Lines.slice(1)) last = await send('PUT', `/inspections/${insId}/results/${line.id}`, answerOf(line))
+check('K9 saving each remaining line is 200 and progress counts up to N-1 of N', last.status === 200 && last.body.data.progress.checked === b101Lines.length && last.body.data.progress.total === b101Lines.length)
+const stillBlocked = await send('POST', `/inspections/${insId}/complete`)
+check('K10 completion is still refused while the one required note is missing', stillBlocked.status === 400 && same(stillBlocked.body.error.details.map((d) => d.field), [`results.${target.id}`]))
+const withNote = await send('PUT', `/inspections/${insId}/results/${target.id}`, answerOf(target, { condition: 'Not working', note: 'Does not power on' }))
+check('K11 once the note is written the inspection reports it can be completed', withNote.status === 200 && withNote.body.data.completion.canComplete === true && withNote.body.data.completion.problems.length === 0)
+const resumed = await send('GET', `/inspections/${insId}`)
+check('K12 leaving and coming back loses nothing: GET returns every saved answer', resumed.status === 200 && resumed.body.data.lines.find((l) => l.id === target.id).current.note === 'Does not power on' && resumed.body.data.progress.checked === b101Lines.length)
+
+const found = await send('POST', `/inspections/${insId}/equipment`, { equipmentTypeId: 'other', name: 'Test visualiser', serialNumber: 'SN-K-1' })
+check('K13 equipment found in the room: 201, flagged "Needs review", on the checklist as a line still to check, and not yet completable', found.status === 201 && found.body.data.lines.some((l) => l.id === found.body.equipmentItemId && l.reviewStatus === 'Needs review' && l.source === 'Found during inspection' && l.current.condition === 'Not checked') && found.body.data.completion.canComplete === false)
+const roomAfterFound = (await get(`/api/audit/rooms/${b101.id}`)).body.data
+check('K14 it is in the room inventory too: one more item, one more needing review', roomAfterFound.equipmentCount === b101Lines.length + 1 && roomAfterFound.itemsNeedingReview === roomByCode('B101').itemsNeedingReview + 1)
+const dupTag = await send('POST', `/inspections/${insId}/equipment`, { equipmentTypeId: 'phone', assetTag: b101Lines.find((l) => l.assetTag)?.assetTag ?? 'NO-SUCH' })
+check('K15 an asset tag already in use is 409 (when the room has a tagged item)', b101Lines.some((l) => l.assetTag) ? dupTag.status === 409 && dupTag.body.error.code === 'CONFLICT' : true)
+await send('PUT', `/inspections/${insId}/results/${found.body.equipmentItemId}`, { condition: 'Working', note: '' })
+
+const done = await send('POST', `/inspections/${insId}/complete`)
+check('K16 completing is 200 with a summary: totals, the fault with its note, and the equipment that needs inventory review', done.status === 200 && done.body.data.status === 'Completed' && done.body.data.summary.totalItems === b101Lines.length + 1 && done.body.data.summary.issues.some((i) => i.equipmentItemId === target.id && i.kind === 'Fault' && i.note === 'Does not power on') && done.body.data.summary.foundItems.some((f) => f.equipmentItemId === found.body.equipmentItemId))
+const afterDone = await stateOf()
+check('K17 the cycle progress now shows the room completed: completed +1 against the start, in progress back to where it was', afterDone.completed === before.completed + 1 && afterDone.inProgress === before.inProgress && afterDone.notStarted === before.notStarted - 1)
+const second = await send('POST', `/inspections/${insId}/complete`)
+check('K18 submitting completion a second time is 409 and the completion time does not change', second.status === 409 && second.body.error.code === 'CONFLICT' && (await send('GET', `/inspections/${insId}`)).body.data.completedAt === done.body.data.completedAt)
+const frozen = await Promise.all([
+  send('PUT', `/inspections/${insId}/results/${target.id}`, { condition: 'Working', note: '' }),
+  send('POST', `/inspections/${insId}/equipment`, { equipmentTypeId: 'phone' }),
+  send('PUT', `/inspections/${insId}/no-equipment`, { confirmed: false }),
+  send('POST', `/inspections/${insId}/unable`, { reason: 'Room locked' }),
+  send('POST', `/rooms/${b101.id}/inspection`, { inspectorId: TECH.id }),
+])
+check('K19 a completed inspection cannot be changed, extended, marked unable or restarted: all 409', frozen.every((r) => r.status === 409 && r.body.error.code === 'CONFLICT'), frozen.map((r) => r.status).join())
+check('K20 the room page now shows the technician, completed, and this cycle\'s answers beside last time\'s', (await get(`/api/audit/rooms/${b101.id}?cycle=${open.id}`)).body.data.equipment.every((l) => l.current && l.current.condition !== 'Not checked' && l.current.inspectorName === TECH.name))
+
+// A room with no equipment.
+const empty = openRooms.find((r) => r.active && r.equipmentCount === 0 && r.inspection.status === 'Not started')
+const e = await send('POST', `/rooms/${empty.id}/inspection`, { inspectorId: TECH.id })
+const eEarly = await send('POST', `/inspections/${e.body.data.id}/complete`)
+check('K21 a room with no equipment cannot be completed without the explicit confirmation', e.status === 201 && e.body.data.lines.length === 0 && eEarly.status === 400 && eEarly.body.error.details[0].field === 'noEquipmentConfirmed')
+const eOk = await send('PUT', `/inspections/${e.body.data.id}/no-equipment`, { confirmed: true })
+const eDone = await send('POST', `/inspections/${e.body.data.id}/complete`)
+check('K22 ... but can once it is confirmed, and the summary records that', eOk.status === 200 && eDone.status === 200 && eDone.body.data.summary.noEquipmentConfirmed === true && eDone.body.data.summary.totalItems === 0)
+const unconfirmable = await send('PUT', `/inspections/${(await send('POST', `/rooms/${roomByCode('B102').id}/inspection`, { inspectorId: TECH.id })).body.data.id}/no-equipment`, { confirmed: true })
+check('K23 confirming "no equipment" for a room that has equipment is rejected (409)', unconfirmable.status === 409 && unconfirmable.body.error.code === 'CONFLICT')
+
+// A room that cannot be inspected, then tried again.
+const locked = openRooms.find((r) => r.active && r.equipmentCount > 0 && r.inspection.status === 'Not started' && ![b101.id, roomByCode('B102').id].includes(r.id))
+const l = await send('POST', `/rooms/${locked.id}/inspection`, { inspectorId: TECH.id })
+const lockedLine = l.body.data.lines[0]
+await send('PUT', `/inspections/${l.body.data.id}/results/${lockedLine.id}`, { condition: 'Not working', note: 'Lamp will not light' })
+const u = await send('POST', `/inspections/${l.body.data.id}/unable`, { reason: 'Room locked', inspectorId: TECH2.id })
+check('K24 "unable to inspect" records the reason, the technician who recorded it and when', u.status === 200 && u.body.data.status === 'Unable to inspect' && u.body.data.attempts.length === 1 && u.body.data.attempts[0].reason === 'Room locked' && u.body.data.attempts[0].byId === TECH2.id && u.body.data.attempts[0].byName === TECH2.name && !Number.isNaN(Date.parse(u.body.data.attempts[0].at)))
+const lr = (await get(`/api/audit/rooms/${locked.id}`)).body.data
+check('K25 the room list and page show it Unable to inspect with that reason', lr.inspection.status === 'Unable to inspect' && lr.inspection.unableReason === 'Room locked' && (await get(`/api/audit/rooms?cycle=${open.id}&inspection=unable&pageSize=100`)).body.data.some((r) => r.id === locked.id))
+const retry = await send('POST', `/rooms/${locked.id}/inspection`, { inspectorId: TECH.id })
+check('K26 the room is still eligible: starting again is 200, the same record, in progress, with the earlier attempt kept', retry.status === 200 && retry.body.data.id === l.body.data.id && retry.body.data.status === 'In progress' && retry.body.data.attempts.length === 1 && retry.body.data.lines.length === locked.equipmentCount)
+const keptLine = retry.body.data.lines.find((x) => x.id === lockedLine.id)
+check('K26a the answer saved before "unable to inspect" is still there after starting again (nothing lost), and the progress shows it', u.body.data.progress.checked === 1 && keptLine.current.condition === 'Not working' && keptLine.current.note === 'Lamp will not light' && retry.body.data.progress.checked === 1)
+check('K26b the audit clock is in effect: the inspection was started inside the Summer 2027 window (2027-06-21 to 2027-08-27)', l.body.data.startedAt >= '2027-06-21' && l.body.data.startedAt <= '2027-08-27T23:59:59Z' && l.body.data.cycle.startDate === '2027-06-21')
+
+// Concurrency.
+const other = openRooms.find((r) => r.active && r.inspection.status === 'Not started' && ![b101.id, empty.id, roomByCode('B102').id, locked.id].includes(r.id))
+const burst = await Promise.all(Array.from({ length: 6 }, () => send('POST', `/rooms/${other.id}/inspection`, { inspectorId: TECH.id })))
+check('K27 six simultaneous starts make ONE inspection: one 201, five 200, one id', burst.filter((r) => r.status === 201).length === 1 && burst.filter((r) => r.status === 200).length === 5 && new Set(burst.map((r) => r.body.data.id)).size === 1)
+
+// Closed cycles, unknown references, invalid data.
+const closedStart = await send('POST', `/rooms/${other.id}/inspection`, { inspectorId: TECH.id, cycleId: byName('Summer 2026').id })
+check('K28 a closed cycle cannot be inspected in: 409', closedStart.status === 409 && closedStart.body.error.code === 'CONFLICT')
+const retired = openRooms.find((r) => !r.active)
+check('K29 a retired room (outside the cycle) cannot be inspected: 409', (await send('POST', `/rooms/${retired.id}/inspection`, { inspectorId: TECH.id })).status === 409)
+check('K30 unknown room, cycle, inspection and item are 404', (await send('POST', '/rooms/ROOM-999/inspection', { inspectorId: TECH.id })).status === 404 && (await send('POST', `/rooms/${other.id}/inspection`, { inspectorId: TECH.id, cycleId: 'CYC-999' })).status === 404 && (await send('GET', '/inspections/INS-999')).status === 404 && (await send('PUT', `/inspections/${burst[0].body.data.id}/results/EQP-999`, { condition: 'Working', note: '' })).status === 404)
+const invalid = await Promise.all([
+  send('POST', `/rooms/${other.id}/inspection`, {}),
+  send('POST', `/rooms/${other.id}/inspection`, { inspectorId: 'TECH-999' }),
+  send('POST', `/inspections/${burst[0].body.data.id}/unable`, { reason: 'x' }),
+  send('POST', `/inspections/${burst[0].body.data.id}/equipment`, { equipmentTypeId: 'nonsense' }),
+])
+check('K31 invalid or unknown input is 400 with the offending field named', invalid.every((r) => r.status === 400 && r.body.error.code === 'VALIDATION_ERROR' && r.body.error.details.length >= 1), invalid.map((r) => r.status).join())
+const malformed = await raw(`/api/audit/rooms/${other.id}/inspection`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"inspectorId":' })
+check('K32 a malformed JSON body is 400, never a server error', malformed.status === 400)
+check('K33 the project, task and technician endpoints are untouched by all of it', (await status('/api/projects')) === 200 && (await status('/api/tasks')) === 200 && (await status('/api/technicians')) === 200)
 
 console.log(`\n${pass}/${pass + fail} checks passed`)

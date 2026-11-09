@@ -55,7 +55,8 @@ function ItemCell({ line }: { line: EquipmentLine }) {
 
 /**
  * One room: where it is, how its inspection stands in the chosen cycle, and its equipment checklist with this
- * cycle answer beside the answer from last time. Read-only: recording an inspection comes in a later stage.
+ * cycle answer beside the answer from last time. The page itself only reads; carrying out the inspection happens on
+ * the inspection page it links to.
  */
 export function AuditRoomPage() {
   const { id = '' } = useParams()
@@ -93,6 +94,8 @@ export function AuditRoomPage() {
   const cycleId = cycleParam ?? cycle?.id
   const blockPath = `/audit/blocks/${encodeURIComponent(room.blockId)}`
   const { inspection } = room
+  const canInspect = cycle?.status === 'Open' && room.active && inspection.inScope && inspection.status !== 'Completed'
+  const inspectLabel = inspection.status === 'In progress' ? 'Continue inspection' : inspection.status === 'Unable to inspect' ? 'Inspect this room again' : 'Start inspection'
   const answered = (line: EquipmentLine) => line.current !== null && line.current.condition !== 'Not checked'
 
   return (
@@ -176,6 +179,13 @@ export function AuditRoomPage() {
             {inspection.status === 'Unable to inspect' && inspection.unableReason && (
               <p>
                 <strong>Reason:</strong> {inspection.unableReason}
+              </p>
+            )}
+            {canInspect && (
+              <p>
+                <Link className="btn btn--primary btn--large" to={withCycle(`/audit/rooms/${encodeURIComponent(room.id)}/inspect`, cycleId)}>
+                  {inspectLabel}
+                </Link>
               </p>
             )}
           </div>

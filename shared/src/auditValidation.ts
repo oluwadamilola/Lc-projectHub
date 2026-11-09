@@ -7,9 +7,11 @@ import {
   type CheckResultCondition,
   type CycleStatus,
   type EquipmentType,
+  type NoEquipmentInput,
   type ResultCondition,
   type RoomInput,
   type RoomInputField,
+  type StartInspectionInput,
   type StoredInspectionStatus,
 } from './audit.js'
 import type { ApiErrorDetail } from './types.js'
@@ -375,4 +377,59 @@ export function correctionBlockedReason(cycleStatus: CycleStatus, inspectionStat
   if (inspectionStatus !== 'Completed') return 'Only a completed inspection can be corrected.'
   if (cycleStatus !== 'Open') return 'This inspection belongs to a closed cycle and can no longer be corrected.'
   return null
+}
+
+/* ---- Starting an inspection and confirming a room has no equipment ---- */
+
+const TECHNICIAN_REFERENCE_PATTERN = /^TECH-\d{3,6}$/
+
+export type StartInspectionValidationResult = { ok: true; value: StartInspectionInput } | { ok: false; errors: ApiErrorDetail[] }
+
+/**
+ * Checks the request that starts or resumes a room inspection: who is inspecting (a technician reference) and,
+ * optionally, which cycle. Without a cycle the server uses the open one. Whether the technician and cycle exist
+ * is checked by the server.
+ */
+export function validateStartInspectionInput(raw: unknown): StartInspectionValidationResult {
+  if (!isPlainObject(raw)) {
+    return { ok: false, errors: [{ field: 'body', message: 'Send the request as a JSON object.' }] }
+  }
+  const errors: ApiErrorDetail[] = []
+  const inspectorId = typeof raw.inspectorId === 'string' ? raw.inspectorId.trim() : ''
+  if (!TECHNICIAN_REFERENCE_PATTERN.test(inspectorId)) {
+    errors.push({ field: 'inspectorId', message: 'Choose who is inspecting from the list of technicians.' })
+  }
+  let cycleId: string | undefined
+  if (raw.cycleId !== undefined && raw.cycleId !== null && raw.cycleId !== '') {
+    if (typeof raw.cycleId === 'string' && CYCLE_REFERENCE_PATTERN.test(raw.cycleId)) cycleId = raw.cycleId
+    else errors.push({ field: 'cycleId', message: 'Must be a cycle reference such as CYC-001.' })
+  }
+  rejectUnknownFields(raw, ['inspectorId', 'cycleId'], errors)
+  sortByFieldOrder(errors, ['inspectorId', 'cycleId'])
+  if (errors.length > 0) return { ok: false, errors }
+  return { ok: true, value: cycleId ? { inspectorId, cycleId } : { inspectorId } }
+}
+
+export type NoEquipmentValidationResult = { ok: true; value: NoEquipmentInput } | { ok: false; errors: ApiErrorDetail[] }
+
+/** `{ "confirmed": true }` says the room has no equipment to inspect; `false` takes the statement back. */
+export function validateNoEquipmentInput(raw: unknown): NoEquipmentValidationResult {
+  if (!isPlainObject(raw)) {
+    return { ok: false, errors: [{ field: 'body', message: 'Send the confirmation as a JSON object.' }] }
+  }
+  const errors: ApiErrorDetail[] = []
+  if (typeof raw.confirmed !== 'boolean') errors.push({ field: 'confirmed', message: 'Must be true or false.' })
+  rejectUnknownFields(raw, ['confirmed'], errors)
+  if (errors.length > 0) return { ok: false, errors }
+  return { ok: true, value: { confirmed: raw.confirmed as boolean } }
+}
+
+/**
+ * Checks the technician reference optionally sent when recording that a room could not be inspected. Absent means
+ * "the inspection's own inspector".
+ */
+export function validateOptionalInspectorId(raw: unknown): { ok: true; value: string | undefined } | { ok: false; errors: ApiErrorDetail[] } {
+  if (raw === undefined || raw === null || raw === '') return { ok: true, value: undefined }
+  if (typeof raw === 'string' && TECHNICIAN_REFERENCE_PATTERN.test(raw)) return { ok: true, value: raw }
+  return { ok: false, errors: [{ field: 'inspectorId', message: 'Choose who is inspecting from the list of technicians.' }] }
 }

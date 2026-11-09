@@ -8,6 +8,8 @@ import type {
   InspectionCycleRecord,
   InspectionRecord,
   InspectionRepository,
+  NewEquipmentItem,
+  NewInspectionRecord,
   RoomPage,
   RoomRepository,
   RoomSearchCriteria,
@@ -21,6 +23,15 @@ import type {
 */
 
 const naturalOrder = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true })
+
+/** The reference after the highest one in use, for example EQP-239 after EQP-238. Padded to three digits. */
+function nextReference(prefix: string, existing: readonly { id: string }[]): string {
+  const highest = existing.reduce((top, { id }) => {
+    const match = new RegExp(`^${prefix}-(\\d+)$`).exec(id)
+    return match ? Math.max(top, Number(match[1])) : top
+  }, 0)
+  return `${prefix}-${String(highest + 1).padStart(3, '0')}`
+}
 
 function copyResult(result: InspectionResult): InspectionResult {
   return {
@@ -158,6 +169,19 @@ export class InMemoryEquipmentItemRepository implements EquipmentItemRepository 
     const item = this.items.find((candidate) => candidate.id === id)
     return item ? { ...item } : null
   }
+
+  async create(input: NewEquipmentItem): Promise<EquipmentItem> {
+    const item: EquipmentItem = { ...input, id: nextReference('EQP', this.items) }
+    this.items.push(item)
+    return { ...item }
+  }
+
+  async remove(id: string): Promise<boolean> {
+    const index = this.items.findIndex((candidate) => candidate.id === id)
+    if (index === -1) return false
+    this.items.splice(index, 1)
+    return true
+  }
 }
 
 export class InMemoryCycleRepository implements CycleRepository {
@@ -195,5 +219,25 @@ export class InMemoryInspectionRepository implements InspectionRepository {
   async findById(id: string): Promise<InspectionRecord | null> {
     const inspection = this.inspections.find((candidate) => candidate.id === id)
     return inspection ? copyInspection(inspection) : null
+  }
+
+  async create(input: NewInspectionRecord): Promise<InspectionRecord> {
+    if (this.inspections.some((existing) => existing.cycleId === input.cycleId && existing.roomId === input.roomId)) {
+      throw new Error(`Room ${input.roomId} already has an inspection in cycle ${input.cycleId}.`)
+    }
+    const id = nextReference('INS', this.inspections)
+    // The result lines belong to the inspection being created, so they carry its new reference.
+    const inspection = copyInspection({ ...input, id, results: input.results.map((result) => ({ ...result, inspectionId: id })) })
+    this.inspections.push(inspection)
+    return copyInspection(inspection)
+  }
+
+  async save(record: InspectionRecord): Promise<InspectionRecord | null> {
+    const index = this.inspections.findIndex((candidate) => candidate.id === record.id)
+    if (index === -1) return null
+    // Built completely before it is swapped in, so a reader sees the old record or the new one, never half of each.
+    const replacement = copyInspection(record)
+    this.inspections[index] = replacement
+    return copyInspection(replacement)
   }
 }

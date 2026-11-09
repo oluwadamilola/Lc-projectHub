@@ -3,6 +3,7 @@ import { AppShell } from './components/AppShell'
 import { navItems } from './data/navigation'
 import { AllTasksPage } from './pages/AllTasksPage'
 import { AuditBlockPage } from './pages/AuditBlockPage'
+import { AuditInspectionPage } from './pages/AuditInspectionPage'
 import { AuditOverviewPage } from './pages/AuditOverviewPage'
 import { AuditRoomPage } from './pages/AuditRoomPage'
 import { Dashboard } from './pages/Dashboard'
@@ -29,6 +30,7 @@ export const routes: RouteObject[] = [
       { path: 'audit/blocks/:id', element: <AuditBlockPage /> },
       { path: 'audit/blocks/:id/floors/:floorId', element: <AuditBlockPage /> },
       { path: 'audit/rooms/:id', element: <AuditRoomPage /> },
+      { path: 'audit/rooms/:id/inspect', element: <AuditInspectionPage /> },
       { path: 'projects/new', element: <ProjectCreatePage /> },
       { path: 'projects/:id', element: <ProjectDetailPage /> },
       { path: 'projects/:id/edit', element: <ProjectEditPage /> },

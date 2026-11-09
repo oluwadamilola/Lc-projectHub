@@ -40,6 +40,7 @@ import type {
 } from '../domain/auditRepository.js'
 import type { TechnicianRepository } from '../domain/technicianRepository.js'
 import { NotFoundError } from '../errors.js'
+import { earlierCompleted, summariseResult } from './auditResults.js'
 
 /** Everything one request needs, loaded once so the figures in a response agree with each other. */
 interface Context {
@@ -198,31 +199,9 @@ export class AuditService {
     const current = view.byRoom.get(roomId) ?? null
 
     // The most recent completed inspections from cycles before the selected one, newest first.
-    const earlier = history
-      .filter((inspection) => inspection.status === 'Completed' && (cycleIndex.get(inspection.cycleId) ?? Infinity) < selectedIndex)
-      .sort((a, b) => (cycleIndex.get(b.cycleId) ?? 0) - (cycleIndex.get(a.cycleId) ?? 0))
-
-    const summarise = (inspection: InspectionRecord, result: InspectionResult, type: EquipmentType): ResultSummary => ({
-      inspectionId: inspection.id,
-      cycleId: inspection.cycleId,
-      cycleName: cycleNames.get(inspection.cycleId) ?? inspection.cycleId,
-      condition: result.condition,
-      note: result.note,
-      checkedAt: result.checkedAt,
-      inspectorName: context.technicianNames.get(inspection.inspectorId) ?? null,
-      corrected: result.corrections.length > 0,
-      checks: type.checks.map((definition) => {
-        const answer = result.checks.find((check) => check.checkId === definition.id)
-        return {
-          checkId: definition.id,
-          label: definition.label,
-          okLabel: definition.okLabel,
-          notOkLabel: definition.notOkLabel,
-          condition: answer?.condition ?? NOT_CHECKED,
-          note: answer?.note ?? '',
-        }
-      }),
-    })
+    const earlier = earlierCompleted(history, cycleIndex, selectedIndex)
+    const names = { cycles: cycleNames, technicians: context.technicianNames }
+    const summarise = (inspection: InspectionRecord, result: InspectionResult, type: EquipmentType): ResultSummary => summariseResult(inspection, result, type, names)
 
     const equipment: EquipmentLine[] = this.activeItems(room.id, context)
       .sort((a, b) => (typeById.get(a.equipmentTypeId)?.order ?? 0) - (typeById.get(b.equipmentTypeId)?.order ?? 0) || a.id.localeCompare(b.id, 'en', { numeric: true }))

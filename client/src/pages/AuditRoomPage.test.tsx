@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAuditCycles, getAuditRoom } from '../api/audit'
 import { ApiRequestError } from '../api/http'
+import type { RoomDetail } from '@lc-projecthub/shared'
 import { closedCycle, cycleList, foundLine, panelLine, projectorLine, roomDetail } from '../test/auditFixtures'
 import { AuditRoomPage } from './AuditRoomPage'
 
@@ -149,6 +150,51 @@ describe('AuditRoomPage', () => {
     expect(await screen.findByText('The room could not be loaded')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
     expect(await screen.findByRole('heading', { level: 1, name: 'B001' })).toBeTruthy()
+  })
+
+  describe('the way into an inspection', () => {
+    const inspectionWith = (over: Partial<RoomDetail['inspection']>) => roomDetail({ inspection: { ...roomDetail().data.inspection, ...over } })
+
+    it('offers "Start inspection" for a room not yet inspected in the open cycle, keeping the cycle in the link', async () => {
+      renderPage('/audit/rooms/ROOM-001?cycle=CYC-003')
+      await screen.findByRole('heading', { level: 1, name: 'B001' })
+      expect(screen.getByRole('link', { name: 'Start inspection' }).getAttribute('href')).toBe('/audit/rooms/ROOM-001/inspect?cycle=CYC-003')
+    })
+
+    it('offers "Continue inspection" while one is in progress, and "Inspect this room again" after unable to inspect', async () => {
+      roomMock.mockResolvedValue(inspectionWith({ status: 'In progress', inspectionId: 'INS-010', inspectorName: 'Aisha Rahman', startedAt: '2027-07-12T09:00:00.000Z' }))
+      const first = renderPage()
+      expect(await screen.findByRole('link', { name: 'Continue inspection' })).toBeTruthy()
+      first.unmount()
+      roomMock.mockResolvedValue(inspectionWith({ status: 'Unable to inspect', inspectionId: 'INS-010', unableReason: 'Room locked' }))
+      renderPage()
+      expect(await screen.findByRole('link', { name: 'Inspect this room again' })).toBeTruthy()
+    })
+
+    it('offers nothing for a completed room, a closed cycle, a retired room or a room outside the cycle', async () => {
+      roomMock.mockResolvedValue(inspectionWith({ status: 'Completed', inspectionId: 'INS-010' }))
+      const a = renderPage()
+      await screen.findByRole('heading', { level: 1, name: 'B001' })
+      expect(screen.queryByRole('link', { name: /inspect/i })).toBeNull()
+      a.unmount()
+
+      roomMock.mockResolvedValue(roomDetail({}, closedCycle))
+      const b = renderPage('/audit/rooms/ROOM-001?cycle=CYC-002')
+      await screen.findByRole('heading', { level: 1, name: 'B001' })
+      expect(screen.queryByRole('link', { name: /inspect/i })).toBeNull()
+      b.unmount()
+
+      roomMock.mockResolvedValue(roomDetail({ active: false }))
+      const c = renderPage()
+      await screen.findByRole('heading', { level: 1, name: 'B001' })
+      expect(screen.queryByRole('link', { name: /inspect/i })).toBeNull()
+      c.unmount()
+
+      roomMock.mockResolvedValue(inspectionWith({ inScope: false }))
+      renderPage()
+      await screen.findByRole('heading', { level: 1, name: 'B001' })
+      expect(screen.queryByRole('link', { name: /inspect/i })).toBeNull()
+    })
   })
 })
 

@@ -13,7 +13,7 @@
   every stage speaks the same language.
 */
 
-import type { PageMeta } from './types.js'
+import type { ApiErrorDetail, PageMeta } from './types.js'
 
 /* ---- Vocabulary ---- */
 
@@ -415,4 +415,114 @@ export interface AuditRoomResponse {
 }
 export interface EquipmentTypeListResponse {
   data: EquipmentType[]
+}
+
+/* ---- Stage 2a: carrying out an inspection (write API) ---- */
+
+/** The room an inspection is about, in the words an inspector needs on screen. */
+export interface InspectionRoomInfo {
+  id: string
+  code: string
+  displayName: string
+  active: boolean
+  blockId: string
+  blockName: string
+  floorId: string
+  floorName: string
+}
+
+/** A visit that did not result in an inspection, with who recorded it. */
+export interface AttemptView {
+  at: string
+  byId: string
+  byName: string | null
+  reason: string
+}
+
+/** "3 of 7 items checked": a line counts as checked once it has any answer other than Not checked. */
+export interface InspectionProgress {
+  total: number
+  checked: number
+}
+
+/**
+ * Whether an in-progress inspection can be completed now, worked out with the same shared rule the server applies
+ * when it is asked to complete. `problems` lists everything still missing; both are empty/false for any inspection
+ * that is not in progress.
+ */
+export interface InspectionCompletion {
+  canComplete: boolean
+  problems: ApiErrorDetail[]
+}
+
+/** One reported fault, replacement or missing item. The full issue-tracking system is a later stage. */
+export interface IssueLine {
+  equipmentItemId: string
+  /** For example "Projector (AT-00012)". */
+  label: string
+  kind: IssueKind
+  condition: EquipmentCondition
+  note: string
+}
+
+/** A failed extra check on an item that is otherwise present, such as firmware that needs updating. */
+export interface CheckIssueLine {
+  equipmentItemId: string
+  label: string
+  checkId: string
+  checkLabel: string
+  /** The answer in the check's own words, for example "Needs update". */
+  answer: string
+  note: string
+}
+
+/** What a completed inspection found. */
+export interface InspectionSummary {
+  totalItems: number
+  /** How many items were given each condition. */
+  counts: Record<EquipmentCondition, number>
+  issues: IssueLine[]
+  checkIssues: CheckIssueLine[]
+  /** Equipment found in the room during this inspection that still needs inventory review. */
+  foundItems: { equipmentItemId: string; label: string }[]
+  noEquipmentConfirmed: boolean
+}
+
+/** An inspection as an inspector sees it: the room, the checklist, where it stands and what is still needed. */
+export interface InspectionView {
+  id: string
+  cycle: InspectionCycle
+  room: InspectionRoomInfo
+  status: StoredInspectionStatus
+  inspectorId: string
+  inspectorName: string | null
+  startedAt: string
+  completedAt: string | null
+  noEquipmentConfirmed: boolean
+  attempts: AttemptView[]
+  /** The checklist, in checklist order. Each line has this inspection's answer and last time's. Empty when unable to inspect. */
+  lines: EquipmentLine[]
+  progress: InspectionProgress
+  completion: InspectionCompletion
+  /** Set once the inspection is completed. */
+  summary: InspectionSummary | null
+}
+
+export interface InspectionResponse {
+  data: InspectionView
+}
+
+export interface AddEquipmentResponse extends InspectionResponse {
+  /** The reference given to the equipment that was added to the inventory. */
+  equipmentItemId: string
+}
+
+/** What starts (or resumes) an inspection of a room. `cycleId` defaults to the open cycle. */
+export interface StartInspectionInput {
+  inspectorId: string
+  cycleId?: string
+}
+
+export interface NoEquipmentInput {
+  confirmed: boolean
 }

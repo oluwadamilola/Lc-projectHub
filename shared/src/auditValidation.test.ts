@@ -28,6 +28,9 @@ import {
   isValidRoomCode,
   noteRequired,
   normaliseRoomCode,
+  validateNoEquipmentInput,
+  validateOptionalInspectorId,
+  validateStartInspectionInput,
   roomCodeFloorDigit,
   validateCorrectionReason,
   validateEquipmentItemInput,
@@ -437,5 +440,50 @@ describe('corrections to a completed inspection', () => {
 
   it('treats a check\'s stored words the same as a condition\'s', () => {
     expect(CHECK_CONDITIONS.every((condition) => (EQUIPMENT_CONDITIONS as readonly string[]).includes(condition))).toBe(true)
+  })
+})
+
+describe('validateStartInspectionInput', () => {
+  it('accepts a technician, with or without a cycle', () => {
+    expect(validateStartInspectionInput({ inspectorId: 'TECH-001' })).toEqual({ ok: true, value: { inspectorId: 'TECH-001' } })
+    expect(validateStartInspectionInput({ inspectorId: ' TECH-002 ', cycleId: 'CYC-003' })).toEqual({ ok: true, value: { inspectorId: 'TECH-002', cycleId: 'CYC-003' } })
+    expect(validateStartInspectionInput({ inspectorId: 'TECH-001', cycleId: null })).toEqual({ ok: true, value: { inspectorId: 'TECH-001' } })
+  })
+  it('requires a well-formed technician reference', () => {
+    for (const bad of [undefined, '', 'Riley Hart', 'tech-001', 'TECH-1', 42, null]) {
+      const result = validateStartInspectionInput({ inspectorId: bad })
+      expect(result.ok, String(bad)).toBe(false)
+      if (!result.ok) expect(result.errors.map((e) => e.field)).toEqual(['inspectorId'])
+    }
+  })
+  it('rejects a malformed cycle, unknown fields and a body that is not an object, listing every problem in field order', () => {
+    const result = validateStartInspectionInput({ cycleId: 'summer', extra: 1 })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors.map((e) => e.field)).toEqual(['inspectorId', 'cycleId', 'extra'])
+    for (const body of [null, 'x', 5, [], undefined]) expect(validateStartInspectionInput(body).ok).toBe(false)
+  })
+})
+
+describe('validateNoEquipmentInput', () => {
+  it('accepts true and false only', () => {
+    expect(validateNoEquipmentInput({ confirmed: true })).toEqual({ ok: true, value: { confirmed: true } })
+    expect(validateNoEquipmentInput({ confirmed: false })).toEqual({ ok: true, value: { confirmed: false } })
+    for (const bad of ['true', 1, null, undefined]) expect(validateNoEquipmentInput({ confirmed: bad }).ok, String(bad)).toBe(false)
+  })
+  it('rejects unknown fields and a body that is not an object', () => {
+    const result = validateNoEquipmentInput({ confirmed: true, sure: true })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors.map((e) => e.field)).toEqual(['sure'])
+    expect(validateNoEquipmentInput(null).ok).toBe(false)
+  })
+})
+
+describe('validateOptionalInspectorId', () => {
+  it('treats a missing value as using the inspection own inspector', () => {
+    for (const absent of [undefined, null, '']) expect(validateOptionalInspectorId(absent)).toEqual({ ok: true, value: undefined })
+  })
+  it('accepts a technician reference and rejects anything else', () => {
+    expect(validateOptionalInspectorId('TECH-004')).toEqual({ ok: true, value: 'TECH-004' })
+    for (const bad of ['Riley', 7, {}, 'TECH-']) expect(validateOptionalInspectorId(bad).ok, String(bad)).toBe(false)
   })
 })

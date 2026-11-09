@@ -1,14 +1,17 @@
+import { completionProblems } from '@lc-projecthub/shared'
 import type {
   AuditBlockListResponse,
   AuditBlockResponse,
   AuditCycleListResponse,
   AuditRoomListResponse,
   AuditRoomResponse,
+  CheckResultCondition,
   CycleProgress,
   CycleSummary,
   EquipmentLine,
   FloorSummary,
   InspectionCycle,
+  InspectionView,
   ResultSummary,
   RoomDetail,
   RoomInspectionSummary,
@@ -167,4 +170,49 @@ export const foundLine: EquipmentLine = {
 
 export function roomDetail(over: Partial<RoomDetail> = {}, cycle: InspectionCycle = openCycle): AuditRoomResponse {
   return { data: { ...roomB001, equipment: [projectorLine, panelLine, foundLine], noEquipmentConfirmed: null, ...over }, cycle }
+}
+
+/* ---- An inspection under way (stage 2b) ---- */
+
+type AnswerInput = Partial<{ condition: ResultSummary['condition']; note: string; checks: Record<string, CheckResultCondition> }>
+
+/**
+ * An inspection of room B001 in the open cycle, built the way the server builds it: each line carries this inspection's
+ * answer (Not checked until answered), and progress and what is still missing are worked out with the shared rule.
+ */
+export function inspectionView(answers: Record<string, AnswerInput> = {}, over: Partial<InspectionView> = {}, baseLines: EquipmentLine[] = [projectorLine, panelLine, foundLine]): InspectionView {
+  const lines: EquipmentLine[] = baseLines.map((line) => {
+    const given = answers[line.id]
+    const checks = line.checks.map((definition) => ({
+      ...definition,
+      checkId: definition.id,
+      condition: given?.checks?.[definition.id] ?? ('Not checked' as const),
+      note: '',
+    }))
+    return {
+      ...line,
+      current: { ...answer({ condition: given?.condition ?? 'Not checked', note: given?.note ?? '', checks, inspectionId: 'INS-010', cycleId: 'CYC-003', cycleName: 'Summer 2027', checkedAt: given?.condition ? '2027-07-12T09:00:00.000Z' : null, inspectorName: 'Aisha Rahman' }) },
+    }
+  })
+  const problems = completionProblems(
+    lines.map((line) => ({ equipmentItemId: line.id, label: line.typeLabel, condition: line.current!.condition, note: line.current!.note, checks: line.current!.checks.map((c) => ({ checkId: c.checkId, condition: c.condition, note: c.note })) })),
+    over.noEquipmentConfirmed ?? false,
+  )
+  return {
+    id: 'INS-010',
+    cycle: openCycle,
+    room: { id: 'ROOM-001', code: 'B001', displayName: 'Training room', active: true, blockId: 'BLK-001', blockName: 'B Block', floorId: 'FLR-001', floorName: 'Ground floor' },
+    status: 'In progress',
+    inspectorId: 'TECH-001',
+    inspectorName: 'Aisha Rahman',
+    startedAt: '2027-07-12T09:00:00.000Z',
+    completedAt: null,
+    noEquipmentConfirmed: false,
+    attempts: [],
+    lines,
+    progress: { total: lines.length, checked: lines.filter((line) => line.current!.condition !== 'Not checked').length },
+    completion: { canComplete: problems.length === 0, problems },
+    summary: null,
+    ...over,
+  }
 }

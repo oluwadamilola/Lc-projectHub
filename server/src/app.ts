@@ -6,6 +6,7 @@ import { createAuditRouter } from './http/auditRoutes.js'
 import { createProjectRouter } from './http/projectRoutes.js'
 import { createAllTasksRouter, createTaskRouter, createTechnicianRouter } from './http/taskRoutes.js'
 import type { AuditService } from './services/auditService.js'
+import type { InspectionService } from './services/inspectionService.js'
 import type { ProjectService } from './services/projectService.js'
 import type { TaskService } from './services/taskService.js'
 import type { TechnicianService } from './services/technicianService.js'
@@ -15,6 +16,7 @@ export interface AppDependencies {
   taskService: TaskService
   technicianService: TechnicianService
   auditService: AuditService
+  inspectionService: InspectionService
   clientOrigin: string
 }
 
@@ -40,7 +42,7 @@ const handleError: ErrorRequestHandler = (err, _req, res, _next) => {
 }
 
 /** Builds the Express app from its dependencies so tests can run it without a real database or port. */
-export function createApp({ projectService, taskService, technicianService, auditService, clientOrigin }: AppDependencies): Express {
+export function createApp({ projectService, taskService, technicianService, auditService, inspectionService, clientOrigin }: AppDependencies): Express {
   const app = express()
   app.disable('x-powered-by')
 
@@ -56,7 +58,7 @@ export function createApp({ projectService, taskService, technicianService, audi
   app.use('/api/projects', createProjectRouter(projectService))
   app.use('/api/tasks', createAllTasksRouter(taskService))
   app.use('/api/technicians', createTechnicianRouter(technicianService))
-  app.use('/api/audit', createAuditRouter(auditService))
+  app.use('/api/audit', createAuditRouter(auditService, inspectionService))
 
   app.use('/api', (_req, res) => {
     res.status(404).json(errorBody('NOT_FOUND', 'No such API endpoint.'))

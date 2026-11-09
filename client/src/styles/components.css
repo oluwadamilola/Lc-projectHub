@@ -977,3 +977,344 @@
   margin: 0;
   padding-left: var(--space-4);
 }
+
+/* Audit: carrying out an inspection (large controls for laptop and tablet use) */
+.btn--large {
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+  font-size: var(--text-base);
+}
+
+.input--large {
+  min-height: 3rem;
+  font-size: var(--text-base);
+}
+
+.start-form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 24rem;
+  margin-top: var(--space-4);
+}
+
+.inspection-bar {
+  /* Pinned under the top bar from tablet width up; on a phone it would take too much of the screen. */
+  position: static;
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.inspection-bar__progress p {
+  margin: 0 0 var(--space-1);
+}
+
+.inspection-bar__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 1.75rem;
+}
+
+.inspection-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (min-width: 40rem) {
+  .inspection-bar {
+    position: sticky;
+    top: var(--topbar-height);
+    z-index: 10;
+  }
+}
+
+@media (min-width: 56rem) {
+  .inspection-bar {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
+
+.save-state {
+  font-weight: 600;
+}
+
+.save-state::before {
+  content: '';
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: var(--space-2);
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.save-state--saved {
+  color: var(--success-text);
+}
+
+.save-state--saved::before {
+  background: var(--success-text);
+}
+
+.save-state--saving::before {
+  background: var(--info-text);
+}
+
+.save-state--error {
+  color: var(--danger-text);
+}
+
+.save-state--error::before {
+  background: var(--danger-text);
+}
+
+.complete-help {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.problem-list {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-5);
+  list-style: disc;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.checklist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check-item {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.check-item--answered {
+  background: var(--surface-raised);
+}
+
+.check-item__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.check-item__title {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.check-item__meta {
+  display: block;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.check-item__previous {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  max-width: 20rem;
+}
+
+.check-item__previous-label {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.check-item__condition,
+.check-item__check {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.check-item__check {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.check-item__check legend {
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.check-item__save {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.check-item__save--error {
+  color: var(--danger-text);
+  font-weight: 600;
+}
+
+.check-item__add-note {
+  justify-self: start;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.choice {
+  position: relative;
+  display: inline-flex;
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+
+.choice span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 6rem;
+  min-height: 3rem;
+  padding: 0 var(--space-4);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+}
+
+.choice input:hover:not(:disabled) + span {
+  background: var(--surface-raised);
+}
+
+.choice input:focus-visible + span {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.choice input:disabled + span {
+  opacity: 0.55;
+}
+
+.choice input:checked + span::before {
+  content: '\2713';
+  /* Empty alternative text: the tick is decoration, so it is not read as part of the choice name. */
+  content: '\2713' / '';
+  margin-right: var(--space-2);
+}
+
+.choice--success input:checked + span {
+  border-color: var(--success-text);
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.choice--danger input:checked + span {
+  border-color: var(--danger-text);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.choice--warning input:checked + span {
+  border-color: var(--warning-text);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.choice--neutral input:checked + span {
+  border-color: var(--text);
+  background: var(--surface-raised);
+}
+
+.input--note {
+  min-height: 5rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.confirm-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3rem;
+  font-weight: 600;
+}
+
+.confirm-box input {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.summary-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issue-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.add-equipment {
+  max-width: none;
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 39.99rem) {
+  .choice span {
+    min-width: 5rem;
+    padding: 0 var(--space-3);
+  }
+}

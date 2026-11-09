@@ -348,8 +348,8 @@ describe('GET /api/audit/equipment-types', () => {
   })
 })
 
-describe('the audit endpoints are read-only and separate', () => {
-  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])('%s is not available on any audit address', async (method) => {
+describe('the inventory and progress endpoints are read-only and separate (writing is only through the inspection endpoints)', () => {
+  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])('%s is not available on any inventory or progress address', async (method) => {
     for (const path of ['/api/audit/cycles', '/api/audit/cycles/CYC-001', '/api/audit/blocks', '/api/audit/blocks/BLK-001', '/api/audit/rooms', '/api/audit/rooms/ROOM-001', '/api/audit/equipment-types']) {
       expect((await send(method, path)).status, `${method} ${path}`).toBe(404)
     }
@@ -357,7 +357,8 @@ describe('the audit endpoints are read-only and separate', () => {
 
   it('an unknown audit address is the standard 404', async () => {
     await expectError(await get('/api/audit/nothing'), 404, 'NOT_FOUND', 'No such API endpoint.')
-    await expectError(await get('/api/audit/inspections/INS-001'), 404, 'NOT_FOUND', 'No such API endpoint.')
+    await expectError(await get('/api/audit/inspections'), 404, 'NOT_FOUND', 'No such API endpoint.')
+    await expectError(await get('/api/audit/inspections/INS-001/nothing'), 404, 'NOT_FOUND', 'No such API endpoint.')
   })
 
   it('leaves the project, task and technician endpoints working', async () => {
@@ -406,6 +407,8 @@ describe('when something goes wrong', () => {
       listByCycle: () => Promise.reject(new Error('secret-connection-string')),
       listByRoom: () => Promise.reject(new Error('secret-connection-string')),
       findById: () => Promise.reject(new Error('secret-connection-string')),
+      create: () => Promise.reject(new Error('secret-connection-string')),
+      save: () => Promise.reject(new Error('secret-connection-string')),
     }
     const broken = await startTestServer(new InMemoryProjectRepository(fixtureProjects), {
       audit: new AuditService(

@@ -17,6 +17,7 @@ import {
 import { InMemoryTaskRepository } from '../repositories/inMemoryTaskRepository.js'
 import { InMemoryTechnicianRepository } from '../repositories/inMemoryTechnicianRepository.js'
 import { AuditService } from '../services/auditService.js'
+import { InspectionService } from '../services/inspectionService.js'
 import { ProjectService } from '../services/projectService.js'
 import { TaskService } from '../services/taskService.js'
 import { TechnicianService } from '../services/technicianService.js'
@@ -33,6 +34,21 @@ export interface TestServerOptions {
   technicians?: TechnicianRepository | readonly Technician[]
   /** Defaults to an empty inventory. */
   audit?: AuditService
+  /** Defaults to an empty inventory. Pass one built over the same repositories as `audit`. */
+  inspections?: InspectionService
+}
+
+function emptyInspectionService(technicians: TechnicianRepository): InspectionService {
+  return new InspectionService(
+    new InMemoryBlockRepository([]),
+    new InMemoryFloorRepository([]),
+    new InMemoryRoomRepository([], []),
+    new InMemoryEquipmentTypeRepository([]),
+    new InMemoryEquipmentItemRepository([]),
+    new InMemoryCycleRepository([]),
+    new InMemoryInspectionRepository([]),
+    technicians,
+  )
 }
 
 function emptyAuditService(technicians: TechnicianRepository): AuditService {
@@ -51,7 +67,7 @@ function emptyAuditService(technicians: TechnicianRepository): AuditService {
 /** Starts the real Express app on a free local port, backed by the given repositories. */
 export async function startTestServer(
   projects: ProjectRepository,
-  { tasks, technicians, audit }: TestServerOptions = {},
+  { tasks, technicians, audit, inspections }: TestServerOptions = {},
 ): Promise<RunningApp> {
   const taskRepository = tasks ?? new InMemoryTaskRepository([])
   const technicianRepository: TechnicianRepository =
@@ -61,6 +77,7 @@ export async function startTestServer(
     taskService: new TaskService(taskRepository, technicianRepository, projects),
     technicianService: new TechnicianService(technicianRepository),
     auditService: audit ?? emptyAuditService(technicianRepository),
+    inspectionService: inspections ?? emptyInspectionService(technicianRepository),
     clientOrigin: 'http://localhost:5173',
   })
   const server: Server = await new Promise((resolve) => {
